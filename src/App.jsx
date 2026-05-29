@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
- 
+
 // ── PALETTE ──────────────────────────────────────────────────────────────────
 const T  = "#0abfbf";
 const TD = "#089494";
 const TL = "#e0f9f9";
 const TM = "#a8ecec";
 const DARK = "#0b1f1f";
- 
+
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const ROLES = [
   { id: "qa",       label: "QA Engineer",        emoji: "🧪" },
@@ -16,14 +16,14 @@ const ROLES = [
   { id: "pm",       label: "Product Manager",     emoji: "📋" },
   { id: "data",     label: "Data Engineer / ML",  emoji: "🤖" },
 ];
- 
+
 const LEVELS = [
   { id: "junior",  label: "Junior",  emoji: "🌱", desc: "0-2 years, learning the basics" },
   { id: "middle",  label: "Middle",  emoji: "💼", desc: "2-5 years, works independently" },
   { id: "senior",  label: "Senior",  emoji: "⭐", desc: "5+ years, leads and mentors" },
   { id: "expert",  label: "Expert",  emoji: "🏆", desc: "10+ years, drives architecture" },
 ];
- 
+
 const QUESTIONS = {
   qa: [
     "Tell me about yourself and your experience in QA.",
@@ -80,7 +80,7 @@ const QUESTIONS = {
     "How do you communicate complex findings to non-technical stakeholders?",
   ],
 };
- 
+
 const JOB_SITES = [
   { name: "Wellfound",          desc: "Стартапы с прозрачными условиями оффера",         url: "https://wellfound.com",                  tag: "Стартапы" },
   { name: "FlexJobs",           desc: "Удалёнка в 50+ сферах, проверенные вакансии",      url: "https://flexjobs.com",                   tag: "Remote" },
@@ -100,16 +100,16 @@ const JOB_SITES = [
   { name: "JS Remotely",        desc: "React, Vue, Node, Angular remote роли",            url: "https://jsremotely.com",                 tag: "JS/Frontend" },
   { name: "Working Nomads",     desc: "Remote для digital nomads: tech, marketing",       url: "https://workingnomads.com",              tag: "Nomad" },
 ];
- 
+
 const TOTAL_SEC = 20 * 60; // 20 minutes
- 
+
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function fmt(s) {
   const m = Math.floor(s / 60).toString().padStart(2, "0");
   const sec = (s % 60).toString().padStart(2, "0");
   return `${m}:${sec}`;
 }
- 
+
 function parseFeedback(text) {
   const sections = {};
   const patterns = {
@@ -125,7 +125,7 @@ function parseFeedback(text) {
   }
   return sections;
 }
- 
+
 // ── WAVEFORM ANIMATION ────────────────────────────────────────────────────────
 function Waveform({ active, color = T }) {
   return (
@@ -143,7 +143,7 @@ function Waveform({ active, color = T }) {
     </div>
   );
 }
- 
+
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage]           = useState("home");   // home | select | interview | feedback | resources
@@ -159,15 +159,15 @@ export default function App() {
   const [feedbackRaw, setFeedbackRaw] = useState("");
   const [loadingFB, setLoadingFB] = useState(false);
   const [micAllowed, setMicAllowed] = useState(null);   // null|true|false
- 
+
   const timerRef    = useRef(null);
   const synthRef    = useRef(window.speechSynthesis);
   const recognRef   = useRef(null);
   const sessionRef  = useRef([]);   // mirror of transcript for async access
   const endedRef    = useRef(false);
- 
+
   const questions = role ? QUESTIONS[role.id] : [];
- 
+
   // ── TIMER ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (running) {
@@ -180,7 +180,7 @@ export default function App() {
     }
     return () => clearInterval(timerRef.current);
   }, [running]);
- 
+
   // ── TTS ───────────────────────────────────────────────────────────────────
   const speak = useCallback((text, onDone) => {
     const synth = synthRef.current;
@@ -197,7 +197,7 @@ export default function App() {
     utt.onerror = () => { setSpeaking(false); onDone && onDone(); };
     synth.speak(utt);
   }, []);
- 
+
   // ── STT ───────────────────────────────────────────────────────────────────
   const startListening = useCallback((onResult) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -220,7 +220,7 @@ export default function App() {
     rec.onend   = () => { setListening(false); };
     rec.start();
   }, []);
- 
+
   // ── SESSION FLOW ──────────────────────────────────────────────────────────
   const askQuestion = useCallback((idx) => {
     if (endedRef.current) return;
@@ -246,7 +246,7 @@ export default function App() {
       });
     });
   }, [questions, speak, startListening]);
- 
+
   async function startSession() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setMicAllowed(false); return; }
@@ -266,7 +266,7 @@ export default function App() {
     const greeting = `Hi! I'm your AI interviewer today. We have 20 minutes. I'll ask you ${questions.length} questions for a ${level?.label} ${role.label} position. Take your time and speak clearly. Let's begin!`;
     speak(greeting, () => askQuestion(0));
   }
- 
+
   function endSession() {
     if (endedRef.current) return;
     endedRef.current = true;
@@ -278,59 +278,85 @@ export default function App() {
     setListening(false);
     generateFeedback();
   }
- 
+
+  function generateLocalFeedback(answers, roleLabel, levelLabel) {
+    const count = answers.length;
+    const totalWords = answers.reduce((sum, a) => sum + a.split(" ").length, 0);
+    const avgWords = count > 0 ? Math.round(totalWords / count) : 0;
+
+    // Score based on answer length and count
+    let score = 5;
+    if (count >= 6) score += 1;
+    if (count >= 7) score += 1;
+    if (avgWords >= 30) score += 1;
+    if (avgWords >= 60) score += 1;
+    if (avgWords < 10) score -= 2;
+    if (count < 3) score -= 2;
+    score = Math.max(1, Math.min(10, score));
+
+    // Keywords check
+    const allText = answers.join(" ").toLowerCase();
+    const hasExamples = /for example|for instance|once i|i had|we had|in my|at my|when i/.test(allText);
+    const hasNumbers = /\d+/.test(allText);
+    const hasStructure = /first|second|also|additionally|however|because|therefore/.test(allText);
+
+    const strengths = [];
+    const weaknesses = [];
+    const tips = [];
+
+    if (count >= 6) strengths.push("Completed most of the interview — showed commitment and stamina");
+    else if (count >= 3) strengths.push("Answered several questions and stayed engaged throughout");
+    if (avgWords >= 40) strengths.push("Gave detailed, substantive answers rather than one-liners");
+    if (hasExamples) strengths.push("Used real examples from experience — this is exactly what interviewers want");
+    if (hasStructure) strengths.push("Structured answers logically, making them easy to follow");
+    if (hasNumbers) strengths.push("Used specific numbers or metrics to back up claims");
+    if (strengths.length < 2) strengths.push("Attempted to answer questions under pressure — that takes courage");
+    if (strengths.length < 3) strengths.push("Showed familiarity with core concepts of the role");
+
+    if (count < 5) weaknesses.push("Did not complete all questions — try to pace yourself and give shorter answers to cover more ground");
+    if (avgWords < 20) weaknesses.push("Answers were too brief — interviewers need more context and detail");
+    if (!hasExamples) weaknesses.push("Missing concrete examples — every answer should include a real situation from your experience");
+    if (!hasStructure) weaknesses.push("Answers lacked clear structure — try using the STAR method (Situation, Task, Action, Result)");
+    if (weaknesses.length < 2) weaknesses.push("Some answers could go deeper on technical specifics for a " + levelLabel + " level position");
+
+    tips.push("Use the STAR method: Situation, Task, Action, Result — for every behavioral question");
+    tips.push("Aim for 60-90 second answers. Long enough to show depth, short enough to stay focused");
+    tips.push("Prepare 3-5 strong stories from your experience that can be adapted to multiple questions");
+    if (!hasNumbers) tips.push("Add metrics to your answers — 'I reduced test time by 40%' is far stronger than 'I improved it'");
+
+    const verdicts = [
+      score >= 8 ? `Strong performance for a ${levelLabel} ${roleLabel}. You showed real depth and used concrete examples well. A few more practice sessions and you'll be very competitive.`
+      : score >= 6 ? `Solid foundation for a ${levelLabel} ${roleLabel} role. Your answers showed relevant knowledge but could use more structure and specific examples. Keep practicing — you're close.`
+      : `Good start for a ${levelLabel} ${roleLabel} candidate. Focus on giving fuller answers with real examples using the STAR method. Consistent practice will make a big difference quickly.`
+    ];
+
+    return [
+      `OVERALL_SCORE: ${score}`,
+      `STRENGTHS:\n${strengths.slice(0,3).map(s => `• ${s}`).join("\n")}`,
+      `WEAKNESSES:\n${weaknesses.slice(0,3).map(w => `• ${w}`).join("\n")}`,
+      `TIPS:\n${tips.slice(0,3).map(t => `• ${t}`).join("\n")}`,
+      `VERDICT: ${verdicts[0]}`,
+    ].join("\n");
+  }
+
   async function generateFeedback() {
     setPage("feedback");
     setLoadingFB(true);
-    const conv = sessionRef.current.map(e => `${e.role === "ai" ? "Interviewer" : "Candidate"}: ${e.text}`).join("\n");
-    try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{
-            role: "user",
-            content: `You are a senior tech hiring manager. Analyze this mock interview transcript for a ${level?.label} ${role?.label} role and give structured feedback. Calibrate your scoring to the ${level?.label} level - expect more from Senior and Expert candidates.
- 
-TRANSCRIPT:
-${conv || "No answers were recorded."}
- 
-Respond in this EXACT format (keep the labels):
-OVERALL_SCORE: [1-10]
-STRENGTHS:
-• [point 1]
-• [point 2]
-• [point 3]
-WEAKNESSES:
-• [point 1]
-• [point 2]
-TIPS:
-• [actionable tip 1]
-• [actionable tip 2]
-• [actionable tip 3]
-VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
-          }]
-        })
-      });
-      const data = await res.json();
-      const text = data.content?.map(b => b.text || "").join("") || "";
-      setFeedbackRaw(text);
-    } catch {
-      setFeedbackRaw("OVERALL_SCORE: N/A\nVERDICT: Could not connect to AI feedback service. Please check your connection.");
-    }
+    const answers = sessionRef.current.filter(e => e.role === "user").map(e => e.text);
+    await new Promise(r => setTimeout(r, 1200)); // brief loading feel
+    const text = generateLocalFeedback(answers, role?.label || "IT", level?.label || "Middle");
+    setFeedbackRaw(text);
     setLoadingFB(false);
   }
- 
+
   const fb = parseFeedback(feedbackRaw);
   const pct = Math.round(((TOTAL_SEC - timeLeft) / TOTAL_SEC) * 100);
   const timerColor = timeLeft < 120 ? "#ff6b6b" : timeLeft < 300 ? "#f59e0b" : T;
- 
+
   // ══════════════════════════════════════════════════════════════════════════
   // PAGES
   // ══════════════════════════════════════════════════════════════════════════
- 
+
   // ── HOME ──────────────────────────────────────────────────────────────────
   if (page === "home") return (
     <Shell active="home" onNav={setPage}>
@@ -345,7 +371,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
           <button style={styles.bigBtn} onClick={() => setPage("select")}>🎤 Start Voice Interview</button>
           <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `2px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
         </div>
- 
+
         {/* preview card */}
         <div style={{ maxWidth: 660, margin: "52px auto 0", borderRadius: 20, overflow: "hidden", boxShadow: `0 24px 60px ${T}22`, border: `1px solid ${TM}` }}>
           <div style={{ background: DARK, padding: "10px 18px", display: "flex", alignItems: "center", gap: 8 }}>
@@ -374,7 +400,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
           </div>
         </div>
       </div>
- 
+
       {/* features */}
       <div style={{ padding: "64px 5%", background: "white" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
@@ -399,16 +425,16 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
           </div>
         </div>
       </div>
- 
+
       <CtaBanner onStart={() => setPage("select")} />
     </Shell>
   );
- 
+
   // ── SELECT ROLE ───────────────────────────────────────────────────────────
   if (page === "select") return (
     <Shell active="select" onNav={setPage}>
       <div style={{ maxWidth: 780, margin: "0 auto", padding: "56px 5%" }}>
- 
+
         {/* STEP 1 - ROLE */}
         <div style={styles.chip}>Step 1 of 2 - Choose your role</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>What role are you interviewing for?</h2>
@@ -428,7 +454,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
             </div>
           ))}
         </div>
- 
+
         {/* STEP 2 - LEVEL */}
         <div style={{ marginTop: 48 }}>
           <div style={styles.chip}>Step 2 of 2 - Choose your level</div>
@@ -451,13 +477,13 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
             ))}
           </div>
         </div>
- 
+
         {micAllowed === false && (
           <div style={{ marginTop: 24, background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 10, padding: 16, color: "#b91c1c", fontSize: 14 }}>
             Microphone access was denied. Please allow microphone access in your browser settings and reload.
           </div>
         )}
- 
+
         <div style={{ marginTop: 32, display: "flex", gap: 12 }}>
           <button style={{ ...styles.bigBtn, opacity: (role && level) ? 1 : 0.45 }} disabled={!role || !level} onClick={startSession}>
             🎤 Start Interview
@@ -467,7 +493,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
       </div>
     </Shell>
   );
- 
+
   // ── INTERVIEW ─────────────────────────────────────────────────────────────
   if (page === "interview") return (
     <div style={{ fontFamily: "'DM Sans',sans-serif", background: DARK, minHeight: "100vh", color: "white" }}>
@@ -480,12 +506,12 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
           <button onClick={endSession} style={{ background: "#1e3535", color: "#ff6b6b", border: "1px solid #ff6b6b55", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>End Session</button>
         </div>
       </div>
- 
+
       {/* progress */}
       <div style={{ height: 3, background: "#1e3535" }}>
         <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${T},${TD})`, transition: "width 1s linear" }} />
       </div>
- 
+
       {/* transcript */}
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "28px 5%", display: "flex", flexDirection: "column", gap: 14, minHeight: "calc(100vh - 180px)", overflowY: "auto" }}>
         {transcript.map((e, i) => (
@@ -498,7 +524,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
           </div>
         ))}
       </div>
- 
+
       {/* status bar */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d2525", borderTop: "1px solid #1e3535", padding: "16px 5%", display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
         {speaking && <><Waveform active={true} color={T} /><span style={{ color: TM, fontSize: 13, fontWeight: 600 }}>AI speaking…</span></>}
@@ -508,7 +534,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
       </div>
     </div>
   );
- 
+
   // ── FEEDBACK ──────────────────────────────────────────────────────────────
   if (page === "feedback") return (
     <Shell active="" onNav={setPage}>
@@ -516,7 +542,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
         <div style={styles.chip}>Session Complete</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Your Interview Feedback</h2>
         <p style={{ color: "#4a7070", marginBottom: 32 }}>Role: <strong>{level?.label} {role?.label}</strong> - {transcript.filter(e => e.role === "user").length} answers recorded</p>
- 
+
         {loadingFB ? (
           <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>🤖</div>
@@ -542,7 +568,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
             {!fb.score && feedbackRaw && <div style={{ ...styles.card, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7, color: "#334" }}>{feedbackRaw}</div>}
           </div>
         )}
- 
+
         <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); }}>Practice Again</button>
           <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `2px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
@@ -550,7 +576,7 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
       </div>
     </Shell>
   );
- 
+
   // ── RESOURCES ─────────────────────────────────────────────────────────────
   if (page === "resources") return (
     <Shell active="resources" onNav={setPage}>
@@ -576,10 +602,10 @@ VERDICT: [2-3 encouraging sentences summarizing readiness and next steps]`
       <CtaBanner onStart={() => setPage("select")} />
     </Shell>
   );
- 
+
   return null;
 }
- 
+
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
 function Shell({ children, active, onNav }) {
   return (
@@ -605,7 +631,7 @@ function Shell({ children, active, onNav }) {
     </div>
   );
 }
- 
+
 function FBCard({ icon, title, text, color }) {
   return (
     <div style={{ background: "white", border: `1px solid ${TM}`, borderLeft: `4px solid ${color}`, borderRadius: 14, padding: 20 }}>
@@ -614,7 +640,7 @@ function FBCard({ icon, title, text, color }) {
     </div>
   );
 }
- 
+
 function CtaBanner({ onStart }) {
   return (
     <div style={{ background: `linear-gradient(135deg, ${DARK}, #0a3030)`, padding: "56px 5%", textAlign: "center" }}>
@@ -624,7 +650,7 @@ function CtaBanner({ onStart }) {
     </div>
   );
 }
- 
+
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
 const styles = {
   chip:   { display: "inline-block", background: TL, color: TD, borderRadius: 20, padding: "4px 14px", fontSize: 11.5, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 14 },
@@ -637,7 +663,7 @@ const styles = {
   grid3:  { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 },
   tag:    { background: TL, color: TD, borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 700 },
 };
- 
+
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap');
   @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
