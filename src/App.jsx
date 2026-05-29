@@ -12,7 +12,7 @@ const ROLES = [
   { id: "qa",       label: "QA Engineer",        emoji: "🧪" },
   { id: "frontend", label: "Frontend Developer",  emoji: "🎨" },
   { id: "backend",  label: "Backend Developer",   emoji: "⚙️" },
-  { id: "devops",   label: "DevOps / SRE",        emoji: "🚀" },
+  { id: "devops",   label: "DevOps / SRE",        emoji: "🛠" },
   { id: "pm",       label: "Product Manager",     emoji: "📋" },
   { id: "data",     label: "Data Engineer / ML",  emoji: "🤖" },
 ];
@@ -23,6 +23,8 @@ const LEVELS = [
   { id: "senior",  label: "Senior",  emoji: "⭐", desc: "5+ years, leads and mentors" },
   { id: "expert",  label: "Expert",  emoji: "🏆", desc: "10+ years, drives architecture" },
 ];
+ 
+const QUESTIONS = {
   qa: [
     "Tell me about yourself and your experience in QA.",
     "What is the difference between verification and validation?",
@@ -643,4 +645,3 @@ const CSS = `
   * { box-sizing: border-box; }
   body { margin: 0; }
 `;
- 
