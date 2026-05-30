@@ -443,9 +443,6 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
     <Shell active="home" onNav={setPage}>
       {/* HERO */}
       <div style={{ background: `linear-gradient(160deg, ${TL} 0%, white 60%)`, padding: "60px 5% 0", position: "relative", overflow: "hidden" }}>
-        {/* Decorative blobs */}
-        <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: `${T}18`, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: 20, left: -40, width: 200, height: 200, borderRadius: "50%", background: `${TL}`, pointerEvents: "none" }} />
 
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 40, flexWrap: "wrap" }}>
           {/* Left - text */}
@@ -473,7 +470,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
           {/* Right - Robot + UI preview */}
           <div style={{ flex: "1 1 320px", minWidth: 280, display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 0, animation: "fadeIn .8s .2s both" }}>
             {/* Robot sitting - left half of sprite */}
-            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -16, zIndex: 2, width: 160, height: 200, overflow: "hidden", position: "relative" }}>
+            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -16, zIndex: 2, width: 180, height: 220, position: "relative", overflow: "hidden", background: "transparent" }}>
               <img
                 src="/robots.png"
                 alt="AI Interviewer Robot"
@@ -481,7 +478,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
                   position: "absolute",
                   width: "200%",
                   height: "auto",
-                  top: "-2%",
+                  top: "0%",
                   left: "0%",
                   maxWidth: "none",
                 }}
@@ -594,16 +591,16 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
               {!role && !level ? "Pick a role and level to begin!" : !role ? "Now choose your role!" : !level ? "Great! Now pick your level." : "You're all set — let's go! 🚀"}
             </div>
             {/* Standing robot - right half of sprite */}
-            <div style={{ width: 90, height: 110, overflow: "hidden", position: "relative", flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
+            <div style={{ width: 100, height: 120, overflow: "hidden", position: "relative", flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
               <img
                 src="/robots.png"
                 alt="Robot"
                 style={{
                   position: "absolute",
-                  width: "200%",
-                  height: "auto",
-                  top: "-2%",
-                  left: "-100%",
+                  height: "200%",
+                  width: "auto",
+                  top: "0%",
+                  right: "0%",
                   maxWidth: "none",
                 }}
               />
