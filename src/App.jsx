@@ -126,17 +126,33 @@ export default function App() {
   const speak = useCallback((text, onDone) => {
     const synth = synthRef.current;
     synth.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = "en-US";
-    utt.rate = 0.95;
-    utt.pitch = 1.05;
+
+    const doSpeak = () => {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = "en-US";
+      utt.rate = 0.93;
+      utt.pitch = 1.0;
+      const voices = synth.getVoices();
+      // Priority: Google US English > Microsoft > any en-US > any en
+      const voice =
+        voices.find(v => v.name === "Google US English") ||
+        voices.find(v => /microsoft.*english/i.test(v.name) && v.lang === "en-US") ||
+        voices.find(v => v.lang === "en-US") ||
+        voices.find(v => v.lang.startsWith("en"));
+      if (voice) utt.voice = voice;
+      setSpeaking(true);
+      utt.onend = () => { setSpeaking(false); onDone && onDone(); };
+      utt.onerror = () => { setSpeaking(false); onDone && onDone(); };
+      synth.speak(utt);
+    };
+
+    // Voices may not be loaded yet on first call
     const voices = synth.getVoices();
-    const preferred = voices.find(v => /google|samantha|daniel|karen/i.test(v.name));
-    if (preferred) utt.voice = preferred;
-    setSpeaking(true);
-    utt.onend = () => { setSpeaking(false); onDone && onDone(); };
-    utt.onerror = () => { setSpeaking(false); onDone && onDone(); };
-    synth.speak(utt);
+    if (voices.length > 0) {
+      doSpeak();
+    } else {
+      synth.onvoiceschanged = () => { synth.onvoiceschanged = null; doSpeak(); };
+    }
   }, []);
 
   // ── STT ───────────────────────────────────────────────────────────────────
@@ -487,7 +503,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
         {speaking && <><Waveform active={true} color={T} /><span style={{ color: TM, fontSize: 13, fontWeight: 600 }}>AI speaking…</span></>}
         {listening && <><Waveform active={true} color="#7fffaa" /><span style={{ color: "#7fffaa", fontSize: 13, fontWeight: 600 }}>{statusMsg}</span></>}
         {!speaking && !listening && <span style={{ color: "#4a7070", fontSize: 13 }}>Waiting…</span>}
-        <div style={{ marginLeft: "auto", color: "#4a7070", fontSize: 12 }}>Q {Math.min(qIndex + 1, questions.length)} / {questions.length}</div>
+        <div style={{ marginLeft: "auto", color: "#4a7070", fontSize: 12 }}>Q {qIndex} / {MAX_QUESTIONS}</div>
       </div>
     </div>
   );
