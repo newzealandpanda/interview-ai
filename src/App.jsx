@@ -659,7 +659,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
                   borderWidth: mode?.id === m.id ? 2 : 1.5 }}
                 onMouseEnter={e => { if (mode?.id !== m.id) { e.currentTarget.style.borderColor = m.color; e.currentTarget.style.transform = "translateY(-2px)"; }}}
                 onMouseLeave={e => { if (mode?.id !== m.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-                <div style={{ fontSize: 32, marginBottom: 10 }}>{m.emoji}</div>
+                <img src={`/${m.id}.png`} alt={m.label} style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 10, mixBlendMode: "multiply", display: "block" }} />
                 <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{m.label}</div>
                 <div style={{ fontSize: 13, color: GREY, lineHeight: 1.4 }}>{m.desc}</div>
                 {mode?.id === m.id && <div style={{ marginTop: 8, color: m.color, fontSize: 13, fontWeight: 700 }}>Selected ✓</div>}
