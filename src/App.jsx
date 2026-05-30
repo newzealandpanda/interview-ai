@@ -59,7 +59,74 @@ const LEVELS = [
   { id: "expert", label: "Expert", desc: "10+ years", icon: "/icon-expert.png" },
 ];
 
-const JOB_SITES = [
+const MODES = [
+  {
+    id: "friendly",
+    label: "Friendly",
+    emoji: "😊",
+    desc: "Supportive, encouraging atmosphere",
+    color: "#22c55e",
+    system: (role, level) => `You are Jamie, a warm and encouraging interviewer at a growing tech company. You are interviewing a ${level} ${role} candidate.
+
+YOUR PERSONALITY:
+- Genuinely supportive and patient — your goal is to help the candidate show their best self
+- When an answer is unclear, ask a gentle clarifying question rather than challenging directly
+- Occasionally acknowledge when an answer was good (briefly, once per topic max)
+- Create a conversational, low-pressure atmosphere
+
+INTERVIEW RULES:
+- Ask ONE question at a time — natural, conversational
+- React specifically to what was just said — don't ask random questions
+- Follow up on interesting points they mention (technologies, projects, decisions)
+- If an answer is very brief, gently encourage more: "Could you tell me a bit more about that?"
+- Cover a mix of: experience, technical knowledge, problem-solving, teamwork
+- Output the question only — no preamble, no lengthy commentary`
+  },
+  {
+    id: "normal",
+    label: "Normal",
+    emoji: "💼",
+    desc: "Professional, realistic interview",
+    color: T,
+    system: (role, level) => `You are Alex, a professional senior interviewer at a top tech company. You are interviewing a ${level} ${role} candidate.
+
+YOUR STYLE:
+- Neutral, professional tone — neither harsh nor overly warm
+- Evaluate both technical depth and communication clarity
+- If an answer is vague, ask a direct follow-up: "Can you be more specific?" or "What was your exact approach there?"
+- Don't accept buzzwords without substance — probe for real experience
+
+INTERVIEW RULES:
+- Ask ONE focused question at a time
+- Build on what the candidate just said — every question must connect to their answer
+- Balance: technical skills, past experience, decision-making, behavioral situations
+- If time < 3 min OR questions >= MAX — output only: END_INTERVIEW
+- Output the question only — no preamble, no meta-commentary`
+  },
+  {
+    id: "tough",
+    label: "Tough",
+    emoji: "🔥",
+    desc: "Demanding, pressure-test your limits",
+    color: "#ef4444",
+    system: (role, level) => `You are Morgan, a demanding principal engineer and interviewer at a FAANG-level company. You are interviewing a ${level} ${role} candidate and your bar is exceptionally high.
+
+YOUR STYLE:
+- Direct, no-nonsense, skeptical by default
+- Treat every claim as unverified until the candidate proves it with specifics
+- Challenge vague answers immediately: "That's quite general — what did YOU specifically do?"
+- If they mention a technology, dig into edge cases, trade-offs, and failure modes
+- Never accept "we used X" — ask "why X over Y?", "what went wrong?", "what would you do differently?"
+- Comfortable with silence — don't soften questions
+
+INTERVIEW RULES:
+- Ask ONE precise, probing question at a time
+- Each question should be harder or more specific than the previous based on their answer
+- Probe for: depth of knowledge, real ownership, handling failure, technical trade-offs
+- If the answer is strong — escalate to a harder edge case or system design question
+- Output the question only — absolutely no filler, no praise, no softening`
+  },
+];
   { name: "Wellfound",          desc: "Startups with transparent salary and equity upfront",     url: "https://wellfound.com",                  tag: "Startups" },
   { name: "FlexJobs",           desc: "Remote jobs in 50+ fields, all verified listings",        url: "https://flexjobs.com",                   tag: "Remote" },
   { name: "We Work Remotely",   desc: "100% remote roles in IT, marketing and design",           url: "https://weworkremotely.com",             tag: "Remote" },
@@ -127,6 +194,7 @@ export default function App() {
   const [page, setPage]           = useState("home");   // home | select | interview | feedback | resources
   const [role, setRole]           = useState(null);
   const [level, setLevel]         = useState(null);
+  const [mode, setMode]           = useState(null);
   const [qIndex, setQIndex]       = useState(0);
   const [timeLeft, setTimeLeft]   = useState(TOTAL_SEC);
   const [running, setRunning]     = useState(false);
@@ -288,19 +356,15 @@ export default function App() {
     // Build full conversation history for context
     const history = conversationRef.current;
 
-    const system = `You are Alex, a sharp and experienced technical interviewer at a top tech company. You are interviewing a candidate for a ${level?.label} ${role?.label} position.
+    const currentMode = mode || MODES[1]; // default to Normal
+    const system = currentMode.system(role?.label || "IT professional", level?.label || "Mid-level") + `
 
-CRITICAL RULES:
-1. You MUST read the candidate's last answer carefully and react to it specifically
-2. If the answer was vague or missing details — dig deeper with a follow-up on THAT specific point
-3. If the answer mentioned a technology, project, or experience — ask about it specifically
-4. If the answer was strong — move to a new topic
-5. Never ask generic template questions — every question must feel like a natural continuation of the conversation
-6. One short question only — no preamble, no "Great answer!", no commentary
-7. Questions asked so far: ${asked}. Time remaining: ${Math.floor(timeRemaining / 60)} min.
-8. If questions asked < ${MIN_QUESTIONS} — always continue
-9. If time < 3 min OR questions >= ${MAX_QUESTIONS} — output only: END_INTERVIEW
-10. Output the question only — nothing else before or after`;
+CONTEXT:
+- Questions asked so far: ${asked}
+- Time remaining: ${Math.floor(timeRemaining / 60)} min
+- Min questions: ${MIN_QUESTIONS}, Max: ${MAX_QUESTIONS}
+- If questions asked < ${MIN_QUESTIONS} — always continue
+- If time < 3 min OR questions >= ${MAX_QUESTIONS} — output only: END_INTERVIEW`;
 
     try {
       const response = await askGroq(history, system);
@@ -369,10 +433,15 @@ CRITICAL RULES:
     // Seed the conversation so AI knows the context from the start
     conversationRef.current = [{
       role: "user",
-      content: `[SYSTEM] This is the start of a mock interview. Role: ${level?.label} ${role?.label}. Please begin with "Tell me about yourself" or a similar opener.`
+      content: `[START] Mock interview for ${level?.label} ${role?.label}. Mode: ${mode?.label || "Normal"}. Begin with an opening question or ask them to introduce themselves.`
     }];
 
-    const greeting = `Hi, I'm Alex, your interviewer today. We have 20 minutes. I'll be asking questions for a ${level?.label} ${role?.label} position. Feel free to take your time. Let's get started!`;
+    const greetings = {
+      friendly: `Hi there! I'm Jamie, and I'll be your interviewer today. Don't worry — this is a relaxed conversation. We have 20 minutes and I'll ask you some questions about your experience as a ${level?.label} ${role?.label}. Take your time and speak naturally. Ready to begin?`,
+      normal:   `Hello, I'm Alex. Thanks for joining. We have 20 minutes today. I'll be asking questions relevant to a ${level?.label} ${role?.label} role. Let's get started.`,
+      tough:    `Let's begin. 20 minutes, ${level?.label} ${role?.label} position. I expect specific, detailed answers. Vague responses will be followed up on. Introduce yourself.`,
+    };
+    const greeting = greetings[mode?.id || "normal"];
     speak(greeting, () => runInterviewTurn());
   }
 
@@ -401,7 +470,7 @@ CRITICAL RULES:
     }
 
     try {
-      const system = `You are a senior tech hiring manager giving feedback after a mock interview. Be honest, specific, and constructive. Calibrate scoring to the candidate's stated level.`;
+      const system = `You are a senior tech hiring manager giving feedback after a mock interview. Interview mode was: ${mode?.label || "Normal"} (${mode?.desc || "professional"}). Calibrate your tone and scoring accordingly — be strict for Tough mode, encouraging for Friendly mode.`;
       const prompt = `Analyze this mock interview for a ${level?.label} ${role?.label} role and give structured feedback.
 
 TRANSCRIPT:
@@ -574,10 +643,33 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
             ))}
           </div>
 
-          {/* Robot helper */}
+          {/* STEP 3 - MODE */}
+        <div style={{ marginTop: 52 }}>
+          <div style={styles.chip}>Step 3 of 3</div>
+          <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Interviewer</h2>
+          <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>Each mode changes the tone, pressure, and feedback style.</p>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+            {MODES.map(m => (
+              <div key={m.id} onClick={() => setMode(m)}
+                style={{ ...styles.card, cursor: "pointer", transition: "all .18s", flex: "1 1 180px", minWidth: 160,
+                  borderColor: mode?.id === m.id ? m.color : TM,
+                  background: mode?.id === m.id ? TL : "white",
+                  borderWidth: mode?.id === m.id ? 2 : 1.5 }}
+                onMouseEnter={e => { if (mode?.id !== m.id) { e.currentTarget.style.borderColor = m.color; e.currentTarget.style.transform = "translateY(-2px)"; }}}
+                onMouseLeave={e => { if (mode?.id !== m.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>{m.emoji}</div>
+                <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{m.label}</div>
+                <div style={{ fontSize: 13, color: GREY, lineHeight: 1.4 }}>{m.desc}</div>
+                {mode?.id === m.id && <div style={{ marginTop: 8, color: m.color, fontSize: 13, fontWeight: 700 }}>Selected ✓</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Robot helper */}
           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: 12, marginTop: 24 }}>
             <div style={{ background: "white", border: `1.5px solid ${TM}`, borderRadius: "16px 16px 0 16px", padding: "10px 16px", fontSize: 13, color: DARK, fontWeight: 500, boxShadow: `0 4px 12px ${T}18` }}>
-              {!role && !level ? "Pick a role and level to begin!" : !role ? "Now choose your role!" : !level ? "Great! Now pick your level." : "You're all set — let's go! 🚀"}
+              {!role && !level && !mode ? "Pick a role, level and mode to begin!" : !role ? "Choose your role first." : !level ? "Great! Now pick your level." : !mode ? "Almost there — choose your interviewer!" : "You're all set — let's go! 🚀"}
             </div>
             {/* Standing robot - right half of sprite */}
             <div style={{ flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
@@ -593,7 +685,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
         )}
 
         <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button className="btn-hover" style={{ ...styles.bigBtn, opacity: (role && level) ? 1 : 0.45 }} disabled={!role || !level} onClick={startSession}>
+          <button className="btn-hover" style={{ ...styles.bigBtn, opacity: (role && level && mode) ? 1 : 0.45 }} disabled={!role || !level || !mode} onClick={startSession}>
             🎤 Start Interview
           </button>
           <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("home")}>Back</button>
@@ -608,7 +700,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       <style>{CSS}</style>
       {/* top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 60, borderBottom: "1px solid #1e3535" }}>
-        <div style={{ fontWeight: 800, fontSize: 16, color: T }}>InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500 }}>- {level?.label} {role?.label}</span></div>
+        <div style={{ fontWeight: 800, fontSize: 16, color: T }}>InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500 }}>- {mode?.emoji} {mode?.label} · {level?.label} {role?.label}</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ fontWeight: 800, fontSize: 20, color: timerColor, fontVariantNumeric: "tabular-nums", transition: "color 0.5s" }}>{fmt(timeLeft)}</div>
           <button onClick={endSession} style={{ background: "#1e3535", color: "#ff6b6b", border: "1px solid #ff6b6b55", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>End Session</button>
@@ -657,7 +749,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Session Complete</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Your Interview Feedback</h2>
-        <p style={{ color: GREY, marginBottom: 32 }}>Role: <strong style={{ color: DARK }}>{level?.label} {role?.label}</strong> — {transcript.filter(e => e.role === "user").length} answers recorded</p>
+        <p style={{ color: GREY, marginBottom: 32 }}>Role: <strong style={{ color: DARK }}>{level?.label} {role?.label}</strong> · Mode: <strong style={{ color: mode?.color || T }}>{mode?.emoji} {mode?.label}</strong> · {transcript.filter(e => e.role === "user").length} answers recorded</p>
 
         {loadingFB ? (
           <div style={{ ...styles.card, textAlign: "center", padding: 56 }}>
@@ -692,7 +784,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
         )}
 
         <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button className="btn-hover" style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); }}>Practice Again</button>
+          <button className="btn-hover" style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); setMode(null); }}>Practice Again</button>
           <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
         </div>
       </div>
