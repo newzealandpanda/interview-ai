@@ -127,6 +127,8 @@ INTERVIEW RULES:
 - Output the question only — absolutely no filler, no praise, no softening`
   },
 ];
+
+const JOB_SITES = [
   { name: "Wellfound",          desc: "Startups with transparent salary and equity upfront",     url: "https://wellfound.com",                  tag: "Startups" },
   { name: "FlexJobs",           desc: "Remote jobs in 50+ fields, all verified listings",        url: "https://flexjobs.com",                   tag: "Remote" },
   { name: "We Work Remotely",   desc: "100% remote roles in IT, marketing and design",           url: "https://weworkremotely.com",             tag: "Remote" },
