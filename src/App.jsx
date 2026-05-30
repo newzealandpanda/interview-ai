@@ -10,20 +10,53 @@ const GREY = "#6B7280";   // Muted Grey
 const BG   = "#F9FBFB";   // Background Soft
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
+// Sprite icon helper - crops icon from robots.png sprite bottom section
+// Icons are in a grid in the bottom half of the image
+// Row 1 (roles): QA, Frontend, Backend | Row 2: DevOps, PM, ML
+// Row 3 (levels): Junior, Middle, Senior, Expert
+function SpriteIcon({ col, row, size = 52 }) {
+  // robots.png is ~1080x1080px
+  // Top half (0-540px): robots. Bottom half (540-1080px): icons
+  // Icons area: row0=roles top, row1=roles bottom, row2=levels
+  // Each icon ~180px wide, ~180px tall in original
+  const spriteW = 1080;
+  const spriteH = 1080;
+  const iconAreaTop = 540;   // icons start at ~50% down
+  const iconW = 180;
+  const iconH = 170;
+  const scale = size / iconW;
+  return (
+    <div style={{ width: size, height: size, overflow: "hidden", position: "relative", flexShrink: 0 }}>
+      <img
+        src="/robots.png"
+        alt=""
+        style={{
+          position: "absolute",
+          width: spriteW * scale,
+          height: "auto",
+          top: -(iconAreaTop + row * iconH) * scale,
+          left: -(col * iconW) * scale,
+          maxWidth: "none",
+        }}
+      />
+    </div>
+  );
+}
+
 const ROLES = [
-  { id: "qa",       label: "QA Engineer",        icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 L20 18 M14 10 Q20 6 26 10"/><circle cx="20" cy="24" r="8"/><path d="M16 24 L19 27 L24 21"/></svg>` },
-  { id: "frontend", label: "Frontend Developer",  icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="10" width="28" height="20" rx="3"/><path d="M14 18 L10 22 L14 26 M26 18 L30 22 L26 26 M19 28 L21 14"/></svg>` },
-  { id: "backend",  label: "Backend Developer",   icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="24" height="8" rx="2"/><rect x="8" y="20" width="24" height="8" rx="2"/><circle cx="30" cy="12" r="2" fill="#45A29E"/><circle cx="30" cy="24" r="2" fill="#45A29E"/></svg>` },
-  { id: "devops",   label: "DevOps / SRE",        icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="6"/><path d="M20 8 L20 14 M20 26 L20 32 M8 20 L14 20 M26 20 L32 20 M11.5 11.5 L15.5 15.5 M24.5 24.5 L28.5 28.5 M28.5 11.5 L24.5 15.5 M15.5 24.5 L11.5 28.5"/></svg>` },
-  { id: "pm",       label: "Product Manager",     icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="12" width="24" height="18" rx="3"/><path d="M15 8 L15 14 M25 8 L25 14 M13 21 L27 21 M13 26 L22 26"/></svg>` },
-  { id: "data",     label: "Data Engineer / ML",  icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 28 L16 18 L22 22 L32 12"/><circle cx="16" cy="18" r="2.5" fill="#EAF7F6" stroke="#45A29E"/><circle cx="22" cy="22" r="2.5" fill="#EAF7F6" stroke="#45A29E"/><circle cx="32" cy="12" r="2.5" fill="#EAF7F6" stroke="#45A29E"/></svg>` },
+  { id: "qa",       label: "QA Engineer",       spriteCol: 0, spriteRow: 0 },
+  { id: "frontend", label: "Frontend Developer", spriteCol: 1, spriteRow: 0 },
+  { id: "backend",  label: "Backend Developer",  spriteCol: 2, spriteRow: 0 },
+  { id: "devops",   label: "DevOps / SRE",       spriteCol: 0, spriteRow: 1 },
+  { id: "pm",       label: "Product Manager",    spriteCol: 1, spriteRow: 1 },
+  { id: "data",     label: "Data Engineer / ML", spriteCol: 2, spriteRow: 1 },
 ];
 
 const LEVELS = [
-  { id: "junior", label: "Junior", desc: "0-2 years", icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 32 Q12 24 12 18 A8 8 0 0 1 28 18 Q28 24 20 32Z"/><path d="M17 18 L20 15 L23 18"/></svg>` },
-  { id: "middle", label: "Middle", desc: "2-5 years", icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="18" width="20" height="14" rx="2"/><path d="M14 18 L14 14 Q14 10 20 10 Q26 10 26 14 L26 18"/><path d="M17 25 L20 28 L23 25"/></svg>` },
-  { id: "senior", label: "Senior", desc: "5+ years",  icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8 L22.5 15 L30 15 L24 19.5 L26.5 27 L20 22.5 L13.5 27 L16 19.5 L10 15 L17.5 15Z"/></svg>` },
-  { id: "expert", label: "Expert", desc: "10+ years", icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8 L22.5 15 L30 15 L24 19.5 L26.5 27 L20 22.5 L13.5 27 L16 19.5 L10 15 L17.5 15Z"/><circle cx="20" cy="20" r="3" fill="#45A29E"/></svg>` },
+  { id: "junior", label: "Junior", desc: "0-2 years", spriteCol: 0, spriteRow: 2 },
+  { id: "middle", label: "Middle", desc: "2-5 years", spriteCol: 1, spriteRow: 2 },
+  { id: "senior", label: "Senior", desc: "5+ years",  spriteCol: 2, spriteRow: 2 },
+  { id: "expert", label: "Expert", desc: "10+ years", spriteCol: 3, spriteRow: 2 },
 ];
 
 const JOB_SITES = [
@@ -439,47 +472,20 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
           {/* Right - Robot + UI preview */}
           <div style={{ flex: "1 1 320px", minWidth: 280, display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 0, animation: "fadeIn .8s .2s both" }}>
-            {/* Robot SVG */}
-            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -20, zIndex: 2 }}>
-              <svg width="130" height="160" viewBox="0 0 130 160" fill="none">
-                {/* Body */}
-                <rect x="30" y="70" width="70" height="60" rx="18" fill="white" stroke={T} strokeWidth="2"/>
-                {/* Head */}
-                <rect x="35" y="22" width="60" height="54" rx="20" fill="white" stroke={T} strokeWidth="2"/>
-                {/* Antenna */}
-                <line x1="65" y1="22" x2="65" y2="10" stroke={T} strokeWidth="2"/>
-                <circle cx="65" cy="8" r="4" fill={T}/>
-                {/* Eyes */}
-                <circle cx="52" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-                <circle cx="78" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-                <circle cx="54" cy="43" r="3" fill={T}/>
-                <circle cx="80" cy="43" r="3" fill={T}/>
-                {/* Smile */}
-                <path d="M55 56 Q65 63 75 56" stroke={T} strokeWidth="2" strokeLinecap="round" fill="none"/>
-                {/* Ears */}
-                <rect x="20" y="38" width="14" height="22" rx="7" fill="white" stroke={T} strokeWidth="1.5"/>
-                <rect x="96" y="38" width="14" height="22" rx="7" fill="white" stroke={T} strokeWidth="1.5"/>
-                {/* Headphones */}
-                <path d="M36 36 Q65 14 94 36" stroke={T} strokeWidth="2.5" fill="none"/>
-                <rect x="18" y="34" width="16" height="28" rx="8" fill={TL} stroke={T} strokeWidth="1.5"/>
-                <rect x="96" y="34" width="16" height="28" rx="8" fill={TL} stroke={T} strokeWidth="1.5"/>
-                {/* Chest panel */}
-                <rect x="46" y="84" width="38" height="24" rx="8" fill={TL} stroke={T} strokeWidth="1.5"/>
-                <circle cx="56" cy="92" r="3" fill={T}/>
-                <circle cx="65" cy="92" r="3" fill={T} opacity=".5"/>
-                <circle cx="74" cy="92" r="3" fill={T} opacity=".3"/>
-                <path d="M50 103 Q65 108 80 103" stroke={T} strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                {/* Arms */}
-                <rect x="8" y="74" width="22" height="44" rx="11" fill="white" stroke={T} strokeWidth="1.5"/>
-                <rect x="100" y="74" width="22" height="44" rx="11" fill="white" stroke={T} strokeWidth="1.5"/>
-                {/* Mic in right hand */}
-                <circle cx="111" cy="124" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-                <line x1="111" y1="131" x2="111" y2="140" stroke={T} strokeWidth="2"/>
-                <line x1="107" y1="140" x2="115" y2="140" stroke={T} strokeWidth="2"/>
-                {/* Legs */}
-                <rect x="40" y="126" width="18" height="26" rx="9" fill="white" stroke={T} strokeWidth="1.5"/>
-                <rect x="72" y="126" width="18" height="26" rx="9" fill="white" stroke={T} strokeWidth="1.5"/>
-              </svg>
+            {/* Robot sitting - left half of sprite */}
+            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -16, zIndex: 2, width: 160, height: 200, overflow: "hidden", position: "relative" }}>
+              <img
+                src="/robots.png"
+                alt="AI Interviewer Robot"
+                style={{
+                  position: "absolute",
+                  width: "200%",
+                  height: "auto",
+                  top: "-2%",
+                  left: "0%",
+                  maxWidth: "none",
+                }}
+              />
             </div>
 
             {/* Chat preview card */}
@@ -553,7 +559,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
                 borderWidth: role?.id === r.id ? 2 : 1.5 }}
               onMouseEnter={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-2px)"; }}}
               onMouseLeave={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-              <div style={{ width: 44, height: 44, flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: r.icon }} />
+              <SpriteIcon col={r.spriteCol} row={r.spriteRow} size={44} />
               <div style={{ fontWeight: 700, color: DARK, fontSize: 14 }}>{r.label}</div>
               {role?.id === r.id && <div style={{ marginLeft: "auto", color: T, fontSize: 16 }}>✓</div>}
             </div>
@@ -574,7 +580,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
                   borderWidth: level?.id === lv.id ? 2 : 1.5 }}
                 onMouseEnter={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-2px)"; }}}
                 onMouseLeave={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-                <div style={{ width: 44, height: 44, margin: "0 auto 10px" }} dangerouslySetInnerHTML={{ __html: lv.icon }} />
+                <SpriteIcon col={lv.spriteCol} row={lv.spriteRow} size={44} />
                 <div style={{ fontWeight: 700, color: DARK, fontSize: 14, marginBottom: 3 }}>{lv.label}</div>
                 <div style={{ fontSize: 11.5, color: GREY }}>{lv.desc}</div>
                 {level?.id === lv.id && <div style={{ marginTop: 6, color: T, fontSize: 14, fontWeight: 700 }}>✓</div>}
@@ -587,19 +593,21 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
             <div style={{ background: "white", border: `1.5px solid ${TM}`, borderRadius: "16px 16px 0 16px", padding: "10px 16px", fontSize: 13, color: DARK, fontWeight: 500, boxShadow: `0 4px 12px ${T}18` }}>
               {!role && !level ? "Pick a role and level to begin!" : !role ? "Now choose your role!" : !level ? "Great! Now pick your level." : "You're all set — let's go! 🚀"}
             </div>
-            <svg width="60" height="72" viewBox="0 0 130 160" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="35" y="22" width="60" height="54" rx="20" fill="white" stroke={T} strokeWidth="2"/>
-              <line x1="65" y1="22" x2="65" y2="10" stroke={T} strokeWidth="2"/>
-              <circle cx="65" cy="8" r="4" fill={T}/>
-              <circle cx="52" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-              <circle cx="78" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-              <circle cx="54" cy="43" r="3" fill={T}/>
-              <circle cx="80" cy="43" r="3" fill={T}/>
-              <path d="M55 56 Q65 63 75 56" stroke={T} strokeWidth="2" strokeLinecap="round" fill="none"/>
-              <rect x="20" y="38" width="14" height="22" rx="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-              <rect x="96" y="38" width="14" height="22" rx="7" fill={TL} stroke={T} strokeWidth="1.5"/>
-              <path d="M36 36 Q65 14 94 36" stroke={T} strokeWidth="2" fill="none"/>
-            </svg>
+            {/* Standing robot - right half of sprite */}
+            <div style={{ width: 90, height: 110, overflow: "hidden", position: "relative", flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
+              <img
+                src="/robots.png"
+                alt="Robot"
+                style={{
+                  position: "absolute",
+                  width: "200%",
+                  height: "auto",
+                  top: "-2%",
+                  left: "-100%",
+                  maxWidth: "none",
+                }}
+              />
+            </div>
           </div>
         </div>
 
