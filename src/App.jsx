@@ -148,7 +148,7 @@ const JOB_SITES = [
   { name: "Working Nomads",     desc: "Remote listings for digital nomads in tech and marketing",url: "https://workingnomads.com",              tag: "Nomad" },
 ];
 
-const TOTAL_SEC = 20 * 60; // 20 minutes
+const DEFAULT_DURATION = 20 * 60; // fallback
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function fmt(s) {
@@ -197,8 +197,9 @@ export default function App() {
   const [role, setRole]           = useState(null);
   const [level, setLevel]         = useState(null);
   const [mode, setMode]           = useState(null);
+  const [duration, setDuration]   = useState(20); // minutes
   const [qIndex, setQIndex]       = useState(0);
-  const [timeLeft, setTimeLeft]   = useState(TOTAL_SEC);
+  const [timeLeft, setTimeLeft]   = useState(DEFAULT_DURATION);
   const [running, setRunning]     = useState(false);
   const [transcript, setTranscript] = useState([]);     // [{role,text}]
   const [listening, setListening] = useState(false);
@@ -358,12 +359,13 @@ export default function App() {
     // Build full conversation history for context
     const history = conversationRef.current;
 
-    const currentMode = mode || MODES[1]; // default to Normal
+    const currentMode = mode || MODES[1];
     const system = currentMode.system(role?.label || "IT professional", level?.label || "Mid-level") + `
 
 CONTEXT:
 - Questions asked so far: ${asked}
 - Time remaining: ${Math.floor(timeRemaining / 60)} min
+- Total session duration: ${duration} min
 - Min questions: ${MIN_QUESTIONS}, Max: ${MAX_QUESTIONS}
 - If questions asked < ${MIN_QUESTIONS} — always continue
 - If time < 3 min OR questions >= ${MAX_QUESTIONS} — output only: END_INTERVIEW`;
@@ -428,7 +430,7 @@ CONTEXT:
     questionsAsked.current = 0;
     setTranscript([]);
     setQIndex(0);
-    setTimeLeft(TOTAL_SEC);
+    setTimeLeft(duration * 60);
     setRunning(true);
     setPage("interview");
 
@@ -439,9 +441,9 @@ CONTEXT:
     }];
 
     const greetings = {
-      friendly: `Hi there! I'm Jamie, and I'll be your interviewer today. Don't worry — this is a relaxed conversation. We have 20 minutes and I'll ask you some questions about your experience as a ${level?.label} ${role?.label}. Take your time and speak naturally. Ready to begin?`,
-      normal:   `Hello, I'm Alex. Thanks for joining. We have 20 minutes today. I'll be asking questions relevant to a ${level?.label} ${role?.label} role. Let's get started.`,
-      tough:    `Let's begin. 20 minutes, ${level?.label} ${role?.label} position. I expect specific, detailed answers. Vague responses will be followed up on. Introduce yourself.`,
+      friendly: `Hi there! I'm Jamie, and I'll be your interviewer today. Don't worry — this is a relaxed conversation. We have ${duration} minutes and I'll ask you some questions about your experience as a ${level?.label} ${role?.label}. Take your time and speak naturally. Ready to begin?`,
+      normal:   `Hello, I'm Alex. Thanks for joining. We have ${duration} minutes today. I'll be asking questions relevant to a ${level?.label} ${role?.label} role. Let's get started.`,
+      tough:    `Let's begin. ${duration} minutes, ${level?.label} ${role?.label} position. I expect specific, detailed answers. Vague responses will be followed up on. Introduce yourself.`,
     };
     const greeting = greetings[mode?.id || "normal"];
     speak(greeting, () => runInterviewTurn());
@@ -502,7 +504,8 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
   }
 
   const fb = parseFeedback(feedbackRaw);
-  const pct = Math.round(((TOTAL_SEC - timeLeft) / TOTAL_SEC) * 100);
+  const totalSec = duration * 60;
+  const pct = Math.round(((totalSec - timeLeft) / totalSec) * 100);
   const timerColor = timeLeft < 120 ? "#ff6b6b" : timeLeft < 300 ? "#f59e0b" : T;
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -604,7 +607,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
 
         {/* STEP 1 - ROLE */}
-        <div style={styles.chip}>Step 1 of 2</div>
+        <div style={styles.chip}>Step 1 of 4</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Role</h2>
         <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>Questions will be tailored to your specialization.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }} className="grid-2col">
@@ -625,7 +628,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
         {/* STEP 2 - LEVEL */}
         <div style={{ marginTop: 52 }}>
-          <div style={styles.chip}>Step 2 of 2</div>
+          <div style={styles.chip}>Step 2 of 4</div>
           <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Level</h2>
           <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>AI adjusts question complexity and scoring to your experience.</p>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
@@ -647,7 +650,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
           {/* STEP 3 - MODE */}
         <div style={{ marginTop: 52 }}>
-          <div style={styles.chip}>Step 3 of 3</div>
+          <div style={styles.chip}>Step 3 of 4</div>
           <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Interviewer</h2>
           <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>Each mode changes the tone, pressure, and feedback style.</p>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
@@ -668,10 +671,42 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
           </div>
         </div>
 
+        {/* STEP 4 - DURATION */}
+        <div style={{ marginTop: 52 }}>
+          <div style={styles.chip}>Step 4 of 4</div>
+          <h2 style={{ ...styles.h2, marginBottom: 6 }}>Session Duration</h2>
+          <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>How long do you want your interview to be?</p>
+          <div style={{ ...styles.card, padding: "28px 32px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <span style={{ color: GREY, fontSize: 14 }}>1 min</span>
+              <div style={{ textAlign: "center" }}>
+                <span style={{ fontSize: 36, fontWeight: 800, color: T }}>{duration}</span>
+                <span style={{ fontSize: 16, color: GREY, fontWeight: 500 }}> min</span>
+              </div>
+              <span style={{ color: GREY, fontSize: 14 }}>60 min</span>
+            </div>
+            <input
+              type="range"
+              min={1} max={60} step={1}
+              value={duration}
+              onChange={e => setDuration(Number(e.target.value))}
+              style={{ width: "100%", accentColor: T, height: 6, cursor: "pointer" }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, gap: 8, flexWrap: "wrap" }}>
+              {[5, 10, 15, 20, 30, 45, 60].map(d => (
+                <button key={d} onClick={() => setDuration(d)}
+                  style={{ flex: "1 1 40px", padding: "7px 0", borderRadius: 30, border: `1.5px solid ${duration === d ? T : TM}`, background: duration === d ? TL : "white", color: duration === d ? TD : GREY, fontWeight: duration === d ? 700 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
+                  {d}m
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Robot helper */}
           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: 12, marginTop: 24 }}>
             <div style={{ background: "white", border: `1.5px solid ${TM}`, borderRadius: "16px 16px 0 16px", padding: "10px 16px", fontSize: 13, color: DARK, fontWeight: 500, boxShadow: `0 4px 12px ${T}18` }}>
-              {!role && !level && !mode ? "Pick a role, level and mode to begin!" : !role ? "Choose your role first." : !level ? "Great! Now pick your level." : !mode ? "Almost there — choose your interviewer!" : "You're all set — let's go! 🚀"}
+              {!role ? "Choose your role to begin." : !level ? "Great! Now pick your level." : !mode ? "Now choose your interviewer." : "You're all set — let's go! 🚀"}
             </div>
             {/* Standing robot - right half of sprite */}
             <div style={{ flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
@@ -702,7 +737,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       <style>{CSS}</style>
       {/* top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 60, borderBottom: "1px solid #1e3535" }}>
-        <div style={{ fontWeight: 800, fontSize: 16, color: T }}>InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500 }}>- {mode?.emoji} {mode?.label} · {level?.label} {role?.label}</span></div>
+        <div style={{ fontWeight: 800, fontSize: 16, color: T }}>InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500 }}>- {mode?.emoji} {mode?.label} · {level?.label} {role?.label} · {duration}min</span></div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ fontWeight: 800, fontSize: 20, color: timerColor, fontVariantNumeric: "tabular-nums", transition: "color 0.5s" }}>{fmt(timeLeft)}</div>
           <button onClick={endSession} style={{ background: "#1e3535", color: "#ff6b6b", border: "1px solid #ff6b6b55", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>End Session</button>
@@ -740,7 +775,6 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
         )}
         {!speaking && !listening && statusMsg && <span style={{ color: "#f59e0b", fontSize: 13 }}>{statusMsg}</span>}
         {!speaking && !listening && !statusMsg && <span style={{ color: "#4a7070", fontSize: 13 }}>Waiting...</span>}
-        <div style={{ marginLeft: "auto", color: "#4a7070", fontSize: 12, whiteSpace: "nowrap" }}>Q {qIndex} · up to {MAX_QUESTIONS}</div>
       </div>
     </div>
   );
@@ -786,7 +820,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
         )}
 
         <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button className="btn-hover" style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); setMode(null); }}>Practice Again</button>
+          <button className="btn-hover" style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); setMode(null); setDuration(20); }}>Practice Again</button>
           <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
         </div>
       </div>
