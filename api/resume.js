@@ -1,48 +1,60 @@
-import formidable from "formidable";
-import fs from "fs";
-import pdfParse from "pdf-parse";
-
-export const config = {
-  api: { bodyParser: false },
-};
-
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const form = formidable({ maxFileSize: 5 * 1024 * 1024 });
+  try {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const buffer = Buffer.concat(chunks);
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: "File parse error" });
+    const boundary = req.headers["content-type"]?.split("boundary=")[1];
+    if (!boundary) return res.status(400).json({ error: "No boundary found" });
 
-    const file = files.resume?.[0] || files.resume;
-    if (!file) return res.status(400).json({ error: "No file uploaded" });
+    const bodyStr = buffer.toString("binary");
+    const parts = bodyStr.split("--" + boundary);
 
-    try {
-      const buffer = fs.readFileSync(file.filepath || file.path);
-      const pdf = await pdfParse(buffer);
-      const text = pdf.text?.slice(0, 6000) || "";
+    let pdfBuffer = null;
+    let role = "Software Engineer";
 
-      if (!text.trim()) return res.status(400).json({ error: "Could not extract text from PDF" });
+    for (const part of parts) {
+      if (part.includes('name="resume"')) {
+        const start = part.indexOf("\r\n\r\n") + 4;
+        const end = part.lastIndexOf("\r\n");
+        if (start > 3 && end > start) {
+          pdfBuffer = Buffer.from(part.slice(start, end), "binary");
+        }
+      }
+      if (part.includes('name="role"')) {
+        const start = part.indexOf("\r\n\r\n") + 4;
+        const end = part.lastIndexOf("\r\n");
+        if (start > 3) role = part.slice(start, end).trim();
+      }
+    }
 
-      const role = fields.role?.[0] || fields.role || "Software Engineer";
+    if (!pdfBuffer) return res.status(400).json({ error: "No PDF found in request" });
 
-      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          max_tokens: 1500,
-          messages: [
-            {
-              role: "system",
-              content: `You are an expert tech recruiter and career coach with 15 years of experience reviewing resumes for IT roles.`
-            },
-            {
-              role: "user",
-              content: `Review this resume for a ${role} position and give structured feedback.
+    const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
+    const pdf = await pdfParse(pdfBuffer);
+    const text = pdf.text?.slice(0, 6000) || "";
+
+    if (!text.trim()) return res.status(400).json({ error: "Could not extract text from PDF" });
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 1500,
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert tech recruiter and career coach with 15 years of experience reviewing resumes for IT roles."
+          },
+          {
+            role: "user",
+            content: `Review this resume for a ${role} position and give structured feedback.
 
 RESUME TEXT:
 ${text}
@@ -60,23 +72,22 @@ IMPROVEMENTS:
 - [specific improvement 3]
 ATS_SCORE: [1-10]
 ATS_TIPS:
-- [tip to improve ATS/keyword optimization 1]
+- [tip 1]
 - [tip 2]
 MISSING:
-- [important section or info that's missing 1]
+- [missing 1]
 - [missing 2]
 VERDICT: [2-3 actionable sentences on what to do next]`
-            }
-          ]
-        })
-      });
+          }
+        ]
+      })
+    });
 
-      const data = await response.json();
-      const feedbackText = data.choices?.[0]?.message?.content || "";
-      res.status(200).json({ feedback: feedbackText });
+    const data = await response.json();
+    const feedbackText = data.choices?.[0]?.message?.content || "";
+    res.status(200).json({ feedback: feedbackText });
 
-    } catch (e) {
-      res.status(500).json({ error: "Failed to analyze resume: " + e.message });
-    }
-  });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 }
