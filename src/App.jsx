@@ -44,19 +44,19 @@ function SpriteIcon({ col, row, size = 52 }) {
 }
 
 const ROLES = [
-  { id: "qa",       label: "QA Engineer",       spriteCol: 0, spriteRow: 0 },
-  { id: "frontend", label: "Frontend Developer", spriteCol: 1, spriteRow: 0 },
-  { id: "backend",  label: "Backend Developer",  spriteCol: 2, spriteRow: 0 },
-  { id: "devops",   label: "DevOps / SRE",       spriteCol: 0, spriteRow: 1 },
-  { id: "pm",       label: "Product Manager",    spriteCol: 1, spriteRow: 1 },
-  { id: "data",     label: "Data Engineer / ML", spriteCol: 2, spriteRow: 1 },
+  { id: "qa",       label: "QA Engineer",       emoji: "🧪" },
+  { id: "frontend", label: "Frontend Developer", emoji: "💻" },
+  { id: "backend",  label: "Backend Developer",  emoji: "⚙️" },
+  { id: "devops",   label: "DevOps / SRE",       emoji: "🛠️" },
+  { id: "pm",       label: "Product Manager",    emoji: "📋" },
+  { id: "data",     label: "Data Engineer / ML", emoji: "📊" },
 ];
 
 const LEVELS = [
-  { id: "junior", label: "Junior", desc: "0-2 years", spriteCol: 0, spriteRow: 2 },
-  { id: "middle", label: "Middle", desc: "2-5 years", spriteCol: 1, spriteRow: 2 },
-  { id: "senior", label: "Senior", desc: "5+ years",  spriteCol: 2, spriteRow: 2 },
-  { id: "expert", label: "Expert", desc: "10+ years", spriteCol: 3, spriteRow: 2 },
+  { id: "junior", label: "Junior", desc: "0-2 years", emoji: "🌱" },
+  { id: "middle", label: "Middle", desc: "2-5 years", emoji: "💼" },
+  { id: "senior", label: "Senior", desc: "5+ years",  emoji: "⭐" },
+  { id: "expert", label: "Expert", desc: "10+ years", emoji: "🏆" },
 ];
 
 const JOB_SITES = [
@@ -470,18 +470,11 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
           {/* Right - Robot + UI preview */}
           <div style={{ flex: "1 1 320px", minWidth: 280, display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 0, animation: "fadeIn .8s .2s both" }}>
             {/* Robot sitting - left half of sprite */}
-            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -16, zIndex: 2, width: 180, height: 220, position: "relative", overflow: "hidden", background: "transparent" }}>
+            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -16, zIndex: 2, width: 180, height: 220, position: "relative", overflow: "hidden", background: "transparent", mixBlendMode: "multiply" }}>
               <img
                 src="/robots.png"
                 alt="AI Interviewer Robot"
-                style={{
-                  position: "absolute",
-                  width: "200%",
-                  height: "auto",
-                  top: "0%",
-                  left: "0%",
-                  maxWidth: "none",
-                }}
+                style={{ position: "absolute", width: "200%", height: "auto", top: "0%", left: "0%", maxWidth: "none" }}
               />
             </div>
 
@@ -556,7 +549,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
                 borderWidth: role?.id === r.id ? 2 : 1.5 }}
               onMouseEnter={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-2px)"; }}}
               onMouseLeave={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-              <SpriteIcon col={r.spriteCol} row={r.spriteRow} size={44} />
+              <div style={{ fontSize: 32, flexShrink: 0, width: 44, textAlign: "center" }}>{r.emoji}</div>
               <div style={{ fontWeight: 700, color: DARK, fontSize: 14 }}>{r.label}</div>
               {role?.id === r.id && <div style={{ marginLeft: "auto", color: T, fontSize: 16 }}>✓</div>}
             </div>
@@ -577,7 +570,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
                   borderWidth: level?.id === lv.id ? 2 : 1.5 }}
                 onMouseEnter={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-2px)"; }}}
                 onMouseLeave={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-                <SpriteIcon col={lv.spriteCol} row={lv.spriteRow} size={44} />
+                <div style={{ fontSize: 32, margin: "0 auto 10px", textAlign: "center" }}>{lv.emoji}</div>
                 <div style={{ fontWeight: 700, color: DARK, fontSize: 14, marginBottom: 3 }}>{lv.label}</div>
                 <div style={{ fontSize: 11.5, color: GREY }}>{lv.desc}</div>
                 {level?.id === lv.id && <div style={{ marginTop: 6, color: T, fontSize: 14, fontWeight: 700 }}>✓</div>}
@@ -591,18 +584,11 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
               {!role && !level ? "Pick a role and level to begin!" : !role ? "Now choose your role!" : !level ? "Great! Now pick your level." : "You're all set — let's go! 🚀"}
             </div>
             {/* Standing robot - right half of sprite */}
-            <div style={{ width: 100, height: 120, overflow: "hidden", position: "relative", flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
+            <div style={{ width: 100, height: 120, overflow: "hidden", position: "relative", flexShrink: 0, animation: "float 3s ease-in-out infinite", mixBlendMode: "multiply" }}>
               <img
                 src="/robots.png"
                 alt="Robot"
-                style={{
-                  position: "absolute",
-                  height: "200%",
-                  width: "auto",
-                  top: "0%",
-                  right: "0%",
-                  maxWidth: "none",
-                }}
+                style={{ position: "absolute", height: "200%", width: "auto", top: "0%", right: "0%", maxWidth: "none" }}
               />
             </div>
           </div>
