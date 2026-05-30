@@ -24,63 +24,6 @@ const LEVELS = [
   { id: "expert",  label: "Expert",  emoji: "🏆", desc: "10+ years, drives architecture" },
 ];
 
-const QUESTIONS = {
-  qa: [
-    "Tell me about yourself and your experience in QA.",
-    "What is the difference between verification and validation?",
-    "How do you decide which test cases to automate?",
-    "Walk me through how you would test a login form end-to-end.",
-    "How do you handle flaky tests in Playwright or Cypress?",
-    "Describe a critical bug you found close to a release and how you handled it.",
-    "How are you using AI tools in your QA workflow today?",
-  ],
-  frontend: [
-    "Tell me about yourself and your frontend experience.",
-    "Explain the difference between var, let, and const in JavaScript.",
-    "How does the virtual DOM work in React?",
-    "What are your strategies for improving web performance?",
-    "Walk me through how you would build an accessible modal component.",
-    "Describe a challenging UI problem you solved and how.",
-    "How do you approach cross-browser compatibility?",
-  ],
-  backend: [
-    "Tell me about yourself and your backend stack.",
-    "Explain REST vs GraphQL. When would you use each?",
-    "How do you approach database indexing and query optimization?",
-    "Walk me through how you design a scalable API.",
-    "How do you handle authentication and authorization?",
-    "Describe a production incident you resolved under pressure.",
-    "What is your approach to writing maintainable, testable code?",
-  ],
-  devops: [
-    "Tell me about yourself and your DevOps experience.",
-    "Explain the difference between Docker and a VM.",
-    "How do you design a CI/CD pipeline from scratch?",
-    "What is your approach to Kubernetes resource management?",
-    "How do you handle secrets and environment configuration securely?",
-    "Describe an outage you were responsible for fixing. What happened?",
-    "How do you monitor production systems and define alerting thresholds?",
-  ],
-  pm: [
-    "Tell me about yourself and your product management background.",
-    "How do you prioritize a backlog with competing stakeholder demands?",
-    "Walk me through how you would define and measure a product metric.",
-    "Describe a product you launched from idea to release.",
-    "How do you handle situations where engineering pushes back on your roadmap?",
-    "Give an example of a data-driven decision you made.",
-    "How do you approach user research and incorporate insights into the product?",
-  ],
-  data: [
-    "Tell me about yourself and your data background.",
-    "Explain the difference between supervised and unsupervised learning.",
-    "How do you handle missing or dirty data in a pipeline?",
-    "Walk me through building a recommendation system from scratch.",
-    "How do you ensure the quality and reliability of your data pipelines?",
-    "Describe a model you built that went into production.",
-    "How do you communicate complex findings to non-technical stakeholders?",
-  ],
-};
-
 const JOB_SITES = [
   { name: "Wellfound",          desc: "Стартапы с прозрачными условиями оффера",         url: "https://wellfound.com",                  tag: "Стартапы" },
   { name: "FlexJobs",           desc: "Удалёнка в 50+ сферах, проверенные вакансии",      url: "https://flexjobs.com",                   tag: "Remote" },
@@ -166,9 +109,7 @@ export default function App() {
   const sessionRef  = useRef([]);   // mirror of transcript for async access
   const endedRef    = useRef(false);
 
-  const questions = role ? QUESTIONS[role.id] : [];
-
-  // ── TIMER ─────────────────────────────────────────────────────────────────
+  const questionsAsked = useRef(0);
   useEffect(() => {
     if (running) {
       timerRef.current = setInterval(() => {
@@ -221,31 +162,74 @@ export default function App() {
     rec.start();
   }, []);
 
+  const questionsAsked = useRef(0);
+  const MAX_QUESTIONS = 7;
+
+  // ── GROQ API CALL ─────────────────────────────────────────────────────────
+  async function askGroq(messages, system) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages, system }),
+    });
+    const data = await res.json();
+    return data.text || "";
+  }
+
   // ── SESSION FLOW ──────────────────────────────────────────────────────────
-  const askQuestion = useCallback((idx) => {
+  const conversationRef = useRef([]); // {role: "user"|"assistant", content: string}
+
+  const askNextQuestion = useCallback(async () => {
     if (endedRef.current) return;
-    const q = questions[idx];
-    if (!q) { endSession(); return; }
-    setQIndex(idx);
-    const entry = { role: "ai", text: q };
-    setTranscript(prev => [...prev, entry]);
-    sessionRef.current = [...sessionRef.current, entry];
-    speak(q, () => {
-      if (endedRef.current) return;
-      startListening((userText) => {
+    if (questionsAsked.current >= MAX_QUESTIONS) { endSession(); return; }
+
+    setStatusMsg("AI is thinking...");
+    setSpeaking(true);
+
+    const system = `You are an experienced technical interviewer conducting a mock job interview for a ${level?.label} ${role?.label} position.
+Your job is to ask ONE interview question at a time based on the conversation so far.
+- Ask varied questions: technical skills, behavioral, situational, past experience
+- React naturally to the candidate's previous answer — follow up if something is interesting or vague
+- Keep questions concise, one sentence max
+- Do NOT repeat questions already asked
+- Do NOT add commentary like "Great answer!" — just ask the next question
+- Respond with the question only, nothing else`;
+
+    try {
+      const question = await askGroq(conversationRef.current, system);
+      setSpeaking(false);
+      setStatusMsg("");
+
+      if (!question || endedRef.current) return;
+
+      questionsAsked.current += 1;
+      setQIndex(questionsAsked.current);
+
+      const aiEntry = { role: "ai", text: question };
+      setTranscript(prev => [...prev, aiEntry]);
+      sessionRef.current = [...sessionRef.current, aiEntry];
+
+      speak(question, () => {
         if (endedRef.current) return;
-        const uEntry = { role: "user", text: userText };
-        setTranscript(prev => [...prev, uEntry]);
-        sessionRef.current = [...sessionRef.current, uEntry];
-        // brief AI acknowledgement then next question
-        const acks = ["Got it, thank you.", "Interesting, thank you.", "Noted, let's continue."];
-        const ack = acks[idx % acks.length];
-        speak(ack, () => {
-          if (!endedRef.current) askQuestion(idx + 1);
+        startListening((userText) => {
+          if (endedRef.current) return;
+          const uEntry = { role: "user", text: userText };
+          setTranscript(prev => [...prev, uEntry]);
+          sessionRef.current = [...sessionRef.current, uEntry];
+          conversationRef.current = [
+            ...conversationRef.current,
+            { role: "assistant", content: question },
+            { role: "user", content: userText },
+          ];
+          askNextQuestion();
         });
       });
-    });
-  }, [questions, speak, startListening]);
+    } catch {
+      setSpeaking(false);
+      setStatusMsg("Connection error, retrying...");
+      setTimeout(() => { if (!endedRef.current) askNextQuestion(); }, 2000);
+    }
+  }, [role, level, speak, startListening]);
 
   async function startSession() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -258,13 +242,15 @@ export default function App() {
     }
     endedRef.current = false;
     sessionRef.current = [];
+    conversationRef.current = [];
+    questionsAsked.current = 0;
     setTranscript([]);
     setQIndex(0);
     setTimeLeft(TOTAL_SEC);
     setRunning(true);
     setPage("interview");
-    const greeting = `Hi! I'm your AI interviewer today. We have 20 minutes. I'll ask you ${questions.length} questions for a ${level?.label} ${role.label} position. Take your time and speak clearly. Let's begin!`;
-    speak(greeting, () => askQuestion(0));
+    const greeting = `Hi! I'm your AI interviewer today. We have 20 minutes and I'll ask you around ${MAX_QUESTIONS} questions for a ${level?.label} ${role?.label} position. Take your time, speak clearly, and use examples from your experience. Let's begin!`;
+    speak(greeting, () => askNextQuestion());
   }
 
   function endSession() {
@@ -279,73 +265,45 @@ export default function App() {
     generateFeedback();
   }
 
-  function generateLocalFeedback(answers, roleLabel, levelLabel) {
-    const count = answers.length;
-    const totalWords = answers.reduce((sum, a) => sum + a.split(" ").length, 0);
-    const avgWords = count > 0 ? Math.round(totalWords / count) : 0;
-
-    // Score based on answer length and count
-    let score = 5;
-    if (count >= 6) score += 1;
-    if (count >= 7) score += 1;
-    if (avgWords >= 30) score += 1;
-    if (avgWords >= 60) score += 1;
-    if (avgWords < 10) score -= 2;
-    if (count < 3) score -= 2;
-    score = Math.max(1, Math.min(10, score));
-
-    // Keywords check
-    const allText = answers.join(" ").toLowerCase();
-    const hasExamples = /for example|for instance|once i|i had|we had|in my|at my|when i/.test(allText);
-    const hasNumbers = /\d+/.test(allText);
-    const hasStructure = /first|second|also|additionally|however|because|therefore/.test(allText);
-
-    const strengths = [];
-    const weaknesses = [];
-    const tips = [];
-
-    if (count >= 6) strengths.push("Completed most of the interview — showed commitment and stamina");
-    else if (count >= 3) strengths.push("Answered several questions and stayed engaged throughout");
-    if (avgWords >= 40) strengths.push("Gave detailed, substantive answers rather than one-liners");
-    if (hasExamples) strengths.push("Used real examples from experience — this is exactly what interviewers want");
-    if (hasStructure) strengths.push("Structured answers logically, making them easy to follow");
-    if (hasNumbers) strengths.push("Used specific numbers or metrics to back up claims");
-    if (strengths.length < 2) strengths.push("Attempted to answer questions under pressure — that takes courage");
-    if (strengths.length < 3) strengths.push("Showed familiarity with core concepts of the role");
-
-    if (count < 5) weaknesses.push("Did not complete all questions — try to pace yourself and give shorter answers to cover more ground");
-    if (avgWords < 20) weaknesses.push("Answers were too brief — interviewers need more context and detail");
-    if (!hasExamples) weaknesses.push("Missing concrete examples — every answer should include a real situation from your experience");
-    if (!hasStructure) weaknesses.push("Answers lacked clear structure — try using the STAR method (Situation, Task, Action, Result)");
-    if (weaknesses.length < 2) weaknesses.push("Some answers could go deeper on technical specifics for a " + levelLabel + " level position");
-
-    tips.push("Use the STAR method: Situation, Task, Action, Result — for every behavioral question");
-    tips.push("Aim for 60-90 second answers. Long enough to show depth, short enough to stay focused");
-    tips.push("Prepare 3-5 strong stories from your experience that can be adapted to multiple questions");
-    if (!hasNumbers) tips.push("Add metrics to your answers — 'I reduced test time by 40%' is far stronger than 'I improved it'");
-
-    const verdicts = [
-      score >= 8 ? `Strong performance for a ${levelLabel} ${roleLabel}. You showed real depth and used concrete examples well. A few more practice sessions and you'll be very competitive.`
-      : score >= 6 ? `Solid foundation for a ${levelLabel} ${roleLabel} role. Your answers showed relevant knowledge but could use more structure and specific examples. Keep practicing — you're close.`
-      : `Good start for a ${levelLabel} ${roleLabel} candidate. Focus on giving fuller answers with real examples using the STAR method. Consistent practice will make a big difference quickly.`
-    ];
-
-    return [
-      `OVERALL_SCORE: ${score}`,
-      `STRENGTHS:\n${strengths.slice(0,3).map(s => `• ${s}`).join("\n")}`,
-      `WEAKNESSES:\n${weaknesses.slice(0,3).map(w => `• ${w}`).join("\n")}`,
-      `TIPS:\n${tips.slice(0,3).map(t => `• ${t}`).join("\n")}`,
-      `VERDICT: ${verdicts[0]}`,
-    ].join("\n");
-  }
-
   async function generateFeedback() {
     setPage("feedback");
     setLoadingFB(true);
     const answers = sessionRef.current.filter(e => e.role === "user").map(e => e.text);
-    await new Promise(r => setTimeout(r, 1200)); // brief loading feel
-    const text = generateLocalFeedback(answers, role?.label || "IT", level?.label || "Middle");
-    setFeedbackRaw(text);
+    const conv = sessionRef.current.map(e => `${e.role === "ai" ? "Interviewer" : "Candidate"}: ${e.text}`).join("\n");
+
+    if (answers.length === 0) {
+      setFeedbackRaw("OVERALL_SCORE: N/A\nVERDICT: No answers were recorded. Please try again and make sure your microphone is working.");
+      setLoadingFB(false);
+      return;
+    }
+
+    try {
+      const system = `You are a senior tech hiring manager giving feedback after a mock interview. Be honest, specific, and constructive. Calibrate scoring to the candidate's stated level.`;
+      const prompt = `Analyze this mock interview for a ${level?.label} ${role?.label} role and give structured feedback.
+
+TRANSCRIPT:
+${conv}
+
+Respond in this EXACT format:
+OVERALL_SCORE: [1-10]
+STRENGTHS:
+• [point 1]
+• [point 2]
+• [point 3]
+WEAKNESSES:
+• [point 1]
+• [point 2]
+TIPS:
+• [actionable tip 1]
+• [actionable tip 2]
+• [actionable tip 3]
+VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
+
+      const text = await askGroq([{ role: "user", content: prompt }], system);
+      setFeedbackRaw(text || "OVERALL_SCORE: N/A\nVERDICT: Could not generate feedback. Please try again.");
+    } catch {
+      setFeedbackRaw("OVERALL_SCORE: N/A\nVERDICT: Could not connect to AI feedback service. Please check your connection.");
+    }
     setLoadingFB(false);
   }
 
