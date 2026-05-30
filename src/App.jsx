@@ -1,27 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ── PALETTE ──────────────────────────────────────────────────────────────────
-const T  = "#0abfbf";
-const TD = "#089494";
-const TL = "#e0f9f9";
-const TM = "#a8ecec";
-const DARK = "#0b1f1f";
+const T    = "#45A29E";   // Tiffany Primary
+const TD   = "#2d7a76";   // Tiffany Dark
+const TL   = "#EAF7F6";   // Tiffany Light
+const TM   = "#b8e8e5";   // Tiffany Mid
+const DARK = "#1F2937";   // Deep Charcoal
+const GREY = "#6B7280";   // Muted Grey
+const BG   = "#F9FBFB";   // Background Soft
 
 // ── DATA ─────────────────────────────────────────────────────────────────────
 const ROLES = [
-  { id: "qa",       label: "QA Engineer",        emoji: "🧪" },
-  { id: "frontend", label: "Frontend Developer",  emoji: "🎨" },
-  { id: "backend",  label: "Backend Developer",   emoji: "⚙️" },
-  { id: "devops",   label: "DevOps / SRE",        emoji: "🛠" },
-  { id: "pm",       label: "Product Manager",     emoji: "📋" },
-  { id: "data",     label: "Data Engineer / ML",  emoji: "🤖" },
+  { id: "qa",       label: "QA Engineer",        icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 L20 18 M14 10 Q20 6 26 10"/><circle cx="20" cy="24" r="8"/><path d="M16 24 L19 27 L24 21"/></svg>` },
+  { id: "frontend", label: "Frontend Developer",  icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="10" width="28" height="20" rx="3"/><path d="M14 18 L10 22 L14 26 M26 18 L30 22 L26 26 M19 28 L21 14"/></svg>` },
+  { id: "backend",  label: "Backend Developer",   icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="24" height="8" rx="2"/><rect x="8" y="20" width="24" height="8" rx="2"/><circle cx="30" cy="12" r="2" fill="#45A29E"/><circle cx="30" cy="24" r="2" fill="#45A29E"/></svg>` },
+  { id: "devops",   label: "DevOps / SRE",        icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="6"/><path d="M20 8 L20 14 M20 26 L20 32 M8 20 L14 20 M26 20 L32 20 M11.5 11.5 L15.5 15.5 M24.5 24.5 L28.5 28.5 M28.5 11.5 L24.5 15.5 M15.5 24.5 L11.5 28.5"/></svg>` },
+  { id: "pm",       label: "Product Manager",     icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="12" width="24" height="18" rx="3"/><path d="M15 8 L15 14 M25 8 L25 14 M13 21 L27 21 M13 26 L22 26"/></svg>` },
+  { id: "data",     label: "Data Engineer / ML",  icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 28 L16 18 L22 22 L32 12"/><circle cx="16" cy="18" r="2.5" fill="#EAF7F6" stroke="#45A29E"/><circle cx="22" cy="22" r="2.5" fill="#EAF7F6" stroke="#45A29E"/><circle cx="32" cy="12" r="2.5" fill="#EAF7F6" stroke="#45A29E"/></svg>` },
 ];
 
 const LEVELS = [
-  { id: "junior",  label: "Junior",  emoji: "🌱", desc: "0-2 years, learning the basics" },
-  { id: "middle",  label: "Middle",  emoji: "💼", desc: "2-5 years, works independently" },
-  { id: "senior",  label: "Senior",  emoji: "⭐", desc: "5+ years, leads and mentors" },
-  { id: "expert",  label: "Expert",  emoji: "🏆", desc: "10+ years, drives architecture" },
+  { id: "junior", label: "Junior", desc: "0-2 years", icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 32 Q12 24 12 18 A8 8 0 0 1 28 18 Q28 24 20 32Z"/><path d="M17 18 L20 15 L23 18"/></svg>` },
+  { id: "middle", label: "Middle", desc: "2-5 years", icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="18" width="20" height="14" rx="2"/><path d="M14 18 L14 14 Q14 10 20 10 Q26 10 26 14 L26 18"/><path d="M17 25 L20 28 L23 25"/></svg>` },
+  { id: "senior", label: "Senior", desc: "5+ years",  icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8 L22.5 15 L30 15 L24 19.5 L26.5 27 L20 22.5 L13.5 27 L16 19.5 L10 15 L17.5 15Z"/></svg>` },
+  { id: "expert", label: "Expert", desc: "10+ years", icon: `<svg viewBox="0 0 40 40" fill="none" stroke="#45A29E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8 L22.5 15 L30 15 L24 19.5 L26.5 27 L20 22.5 L13.5 27 L16 19.5 L10 15 L17.5 15Z"/><circle cx="20" cy="20" r="3" fill="#45A29E"/></svg>` },
 ];
 
 const JOB_SITES = [
@@ -406,66 +408,123 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
   // ── HOME ──────────────────────────────────────────────────────────────────
   if (page === "home") return (
     <Shell active="home" onNav={setPage}>
-      <div style={{ textAlign: "center", padding: "80px 5% 60px", background: `linear-gradient(160deg, ${TL} 0%, white 55%, #f0fdfd 100%)` }}>
-        <div style={styles.chip}>✦ AI Voice Interview Prep - IT Edition</div>
-        <h1 style={styles.h1}>
-          Practice interviews<br />
-          <span style={{ color: T }}>by voice</span>, get hired faster
-        </h1>
-        <p style={styles.sub}>Real-time AI mock interviews for QA, Frontend, Backend, DevOps, PM and Data roles. Speak your answers and get instant feedback.</p>
-        <div style={styles.row}>
-          <button style={styles.bigBtn} onClick={() => setPage("select")}>🎤 Start Voice Interview</button>
-          <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `2px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
-        </div>
+      {/* HERO */}
+      <div style={{ background: `linear-gradient(160deg, ${TL} 0%, white 60%)`, padding: "60px 5% 0", position: "relative", overflow: "hidden" }}>
+        {/* Decorative blobs */}
+        <div style={{ position: "absolute", top: -60, right: -60, width: 300, height: 300, borderRadius: "50%", background: `${T}18`, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: 20, left: -40, width: 200, height: 200, borderRadius: "50%", background: `${TL}`, pointerEvents: "none" }} />
 
-        {/* preview card */}
-        <div style={{ maxWidth: 660, margin: "52px auto 0", borderRadius: 20, overflow: "hidden", boxShadow: `0 24px 60px ${T}22`, border: `1px solid ${TM}` }}>
-          <div style={{ background: DARK, padding: "10px 18px", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#ff5f57", display: "inline-block" }} />
-            <span style={{ width: 12, height: 12, borderRadius: "50%", background: "#febc2e", display: "inline-block" }} />
-            <span style={{ width: 12, height: 12, borderRadius: "50%", background: T, display: "inline-block" }} />
-            <span style={{ color: TM, fontSize: 12, fontWeight: 600, marginLeft: 6 }}>Live Voice Session - QA Engineer</span>
-            <span style={{ marginLeft: "auto", color: "#ff6b6b", fontSize: 12, fontWeight: 700 }}>● REC  18:42</span>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 40, flexWrap: "wrap" }}>
+          {/* Left - text */}
+          <div style={{ flex: "1 1 340px", minWidth: 280, animation: "fadeIn .6s ease" }} className="mobile-center">
+            <div style={styles.chip}>✦ AI Voice Interview Prep</div>
+            <h1 style={{ ...styles.h1, fontSize: "clamp(2rem,4.5vw,3.2rem)" }}>
+              Practice interviews<br />
+              <span style={{ color: T }}>by voice,</span><br />
+              get hired faster
+            </h1>
+            <p style={{ ...styles.sub, margin: "0 0 32px", textAlign: "left" }} className="mobile-center">
+              Real-time AI mock interviews for QA, Frontend, Backend, DevOps, PM and Data roles. Speak your answers and get instant AI feedback.
+            </p>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button className="btn-hover" style={styles.bigBtn} onClick={() => setPage("select")}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                Start Voice Interview
+              </button>
+              <button className="btn-hover" style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>
+                View Job Sites →
+              </button>
+            </div>
           </div>
-          <div style={{ background: "white", padding: 24 }}>
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 18 }}>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", background: `linear-gradient(135deg,${T},${TD})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🤖</div>
-              <div style={{ background: TL, borderRadius: "0 12px 12px 12px", padding: "11px 15px", fontSize: 14, color: DARK, lineHeight: 1.5 }}>
-                <em>How do you handle flaky tests in Playwright?</em>
-              </div>
+
+          {/* Right - Robot + UI preview */}
+          <div style={{ flex: "1 1 320px", minWidth: 280, display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 0, animation: "fadeIn .8s .2s both" }}>
+            {/* Robot SVG */}
+            <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -20, zIndex: 2 }}>
+              <svg width="130" height="160" viewBox="0 0 130 160" fill="none">
+                {/* Body */}
+                <rect x="30" y="70" width="70" height="60" rx="18" fill="white" stroke={T} strokeWidth="2"/>
+                {/* Head */}
+                <rect x="35" y="22" width="60" height="54" rx="20" fill="white" stroke={T} strokeWidth="2"/>
+                {/* Antenna */}
+                <line x1="65" y1="22" x2="65" y2="10" stroke={T} strokeWidth="2"/>
+                <circle cx="65" cy="8" r="4" fill={T}/>
+                {/* Eyes */}
+                <circle cx="52" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+                <circle cx="78" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+                <circle cx="54" cy="43" r="3" fill={T}/>
+                <circle cx="80" cy="43" r="3" fill={T}/>
+                {/* Smile */}
+                <path d="M55 56 Q65 63 75 56" stroke={T} strokeWidth="2" strokeLinecap="round" fill="none"/>
+                {/* Ears */}
+                <rect x="20" y="38" width="14" height="22" rx="7" fill="white" stroke={T} strokeWidth="1.5"/>
+                <rect x="96" y="38" width="14" height="22" rx="7" fill="white" stroke={T} strokeWidth="1.5"/>
+                {/* Headphones */}
+                <path d="M36 36 Q65 14 94 36" stroke={T} strokeWidth="2.5" fill="none"/>
+                <rect x="18" y="34" width="16" height="28" rx="8" fill={TL} stroke={T} strokeWidth="1.5"/>
+                <rect x="96" y="34" width="16" height="28" rx="8" fill={TL} stroke={T} strokeWidth="1.5"/>
+                {/* Chest panel */}
+                <rect x="46" y="84" width="38" height="24" rx="8" fill={TL} stroke={T} strokeWidth="1.5"/>
+                <circle cx="56" cy="92" r="3" fill={T}/>
+                <circle cx="65" cy="92" r="3" fill={T} opacity=".5"/>
+                <circle cx="74" cy="92" r="3" fill={T} opacity=".3"/>
+                <path d="M50 103 Q65 108 80 103" stroke={T} strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                {/* Arms */}
+                <rect x="8" y="74" width="22" height="44" rx="11" fill="white" stroke={T} strokeWidth="1.5"/>
+                <rect x="100" y="74" width="22" height="44" rx="11" fill="white" stroke={T} strokeWidth="1.5"/>
+                {/* Mic in right hand */}
+                <circle cx="111" cy="124" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+                <line x1="111" y1="131" x2="111" y2="140" stroke={T} strokeWidth="2"/>
+                <line x1="107" y1="140" x2="115" y2="140" stroke={T} strokeWidth="2"/>
+                {/* Legs */}
+                <rect x="40" y="126" width="18" height="26" rx="9" fill="white" stroke={T} strokeWidth="1.5"/>
+                <rect x="72" y="126" width="18" height="26" rx="9" fill="white" stroke={T} strokeWidth="1.5"/>
+              </svg>
             </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "flex-end" }}>
-              <div style={{ background: "#f4fefe", border: `1px solid ${TM}`, borderRadius: "12px 0 12px 12px", padding: "11px 15px", fontSize: 14, color: "#334", lineHeight: 1.5, maxWidth: 380 }}>
-                I usually add retry logic and use Playwright's built-in retry option…
+
+            {/* Chat preview card */}
+            <div style={{ background: "white", borderRadius: 20, boxShadow: `0 16px 48px ${T}22`, border: `1.5px solid ${TM}`, overflow: "hidden", width: "min(320px, 100%)", marginBottom: 20 }}>
+              <div style={{ background: DARK, padding: "10px 16px", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ff5f57", display: "inline-block" }} />
+                <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e", display: "inline-block" }} />
+                <span style={{ width: 10, height: 10, borderRadius: "50%", background: T, display: "inline-block" }} />
+                <span style={{ color: TM, fontSize: 11, fontWeight: 600, marginLeft: 6 }}>Live Voice Session</span>
+                <span style={{ marginLeft: "auto", color: "#ff6b6b", fontSize: 11, fontWeight: 700 }}>● REC</span>
               </div>
-              <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#e8f8f8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🧑</div>
-            </div>
-            <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
-              <Waveform active={true} />
+              <div style={{ padding: 16 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: TL, border: `1.5px solid ${T}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>🤖</div>
+                  <div style={{ background: TL, borderRadius: "0 12px 12px 12px", padding: "9px 12px", fontSize: 13, color: DARK, lineHeight: 1.5 }}>How do you handle flaky tests in Playwright?</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 14 }}>
+                  <div style={{ background: BG, border: `1px solid ${TM}`, borderRadius: "12px 0 12px 12px", padding: "9px 12px", fontSize: 13, color: DARK, lineHeight: 1.5 }}>I use retry logic and Playwright's built-in retry option...</div>
+                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: TL, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>🧑</div>
+                </div>
+                <Waveform active={true} color={T} />
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* features */}
+      {/* FEATURES */}
       <div style={{ padding: "64px 5%", background: "white" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <h2 style={{ ...styles.h2, textAlign: "center", marginBottom: 36 }}>Everything in one place</h2>
+          <h2 style={{ ...styles.h2, textAlign: "center", marginBottom: 8 }}>Everything in one place</h2>
+          <p style={{ color: GREY, textAlign: "center", marginBottom: 40, fontSize: 15 }}>All the tools you need to land your next IT role.</p>
           <div style={styles.grid3}>
             {[
-              ["🎤","Voice-First","Speak naturally, no typing. The AI listens, responds, and tracks the conversation."],
-              ["⏱","20-Min Sessions","Realistic time pressure. A countdown keeps you sharp, just like a real phone screen."],
-              ["📊","AI Score & Feedback","Strengths, weaknesses, and actionable tips after every session."],
-              ["🧪","6 IT Roles","QA, Frontend, Backend, DevOps, PM, Data Engineering - all covered."],
-              ["🌐","Job Site Directory","17 curated remote-friendly job boards, from Wellfound to Levels.fyi."],
-              ["🔓","Free & Open Source","No login. No paywall. Deploy it on GitHub + Vercel in minutes."],
+              [`<svg viewBox="0 0 40 40" fill="none" stroke="${T}" stroke-width="1.8" stroke-linecap="round"><path d="M12 20 Q12 10 20 8 Q28 10 28 20"/><rect x="8" y="20" width="24" height="12" rx="6"/><line x1="20" y1="32" x2="20" y2="37"/><line x1="15" y1="37" x2="25" y2="37"/></svg>`, "Voice-First", "Speak naturally, no typing. The AI listens, responds, and tracks the whole conversation."],
+              [`<svg viewBox="0 0 40 40" fill="none" stroke="${T}" stroke-width="1.8" stroke-linecap="round"><circle cx="20" cy="20" r="12"/><path d="M20 14 L20 20 L25 23"/></svg>`, "20-Min Sessions", "Realistic time pressure. A countdown keeps you sharp, just like a real phone screen."],
+              [`<svg viewBox="0 0 40 40" fill="none" stroke="${T}" stroke-width="1.8" stroke-linecap="round"><rect x="8" y="12" width="24" height="18" rx="4"/><path d="M14 22 L18 26 L26 18"/></svg>`, "AI Score & Feedback", "Strengths, weaknesses, and actionable tips generated by AI after every session."],
+              [`<svg viewBox="0 0 40 40" fill="none" stroke="${T}" stroke-width="1.8" stroke-linecap="round"><circle cx="14" cy="20" r="5"/><circle cx="26" cy="14" r="5"/><circle cx="26" cy="26" r="5"/><line x1="19" y1="18" x2="21" y2="15"/><line x1="19" y1="22" x2="21" y2="25"/></svg>`, "6 IT Roles", "QA, Frontend, Backend, DevOps, PM, Data Engineering — all covered with tailored questions."],
+              [`<svg viewBox="0 0 40 40" fill="none" stroke="${T}" stroke-width="1.8" stroke-linecap="round"><circle cx="20" cy="20" r="12"/><path d="M8 20 Q14 14 20 20 Q26 26 32 20"/></svg>`, "Job Site Directory", "17 curated remote-friendly job boards — from Wellfound to Levels.fyi."],
+              [`<svg viewBox="0 0 40 40" fill="none" stroke="${T}" stroke-width="1.8" stroke-linecap="round"><rect x="10" y="14" width="20" height="20" rx="4"/><path d="M15 14 L15 10 Q15 8 20 8 Q25 8 25 10 L25 14"/><circle cx="20" cy="24" r="3" fill="${TL}"/></svg>`, "Free & Open Source", "No login, no paywall. Deploy on GitHub and Vercel in minutes."],
             ].map(([icon, title, desc], i) => (
-              <div key={i} style={{ ...styles.card, transition: "all .2s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-3px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}>
-                <div style={{ fontSize: 30, marginBottom: 10 }}>{icon}</div>
+              <div key={i} className="card-hover" style={{ ...styles.card, transition: "all .2s", cursor: "default" }}>
+                <div style={{ width: 44, height: 44, marginBottom: 14 }} dangerouslySetInnerHTML={{ __html: icon }} />
                 <h4 style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: DARK }}>{title}</h4>
-                <p style={{ color: "#4a7070", fontSize: 13.5, margin: 0, lineHeight: 1.6 }}>{desc}</p>
+                <p style={{ color: GREY, fontSize: 13.5, margin: 0, lineHeight: 1.6 }}>{desc}</p>
               </div>
             ))}
           </div>
@@ -479,62 +538,82 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
   // ── SELECT ROLE ───────────────────────────────────────────────────────────
   if (page === "select") return (
     <Shell active="select" onNav={setPage}>
-      <div style={{ maxWidth: 780, margin: "0 auto", padding: "56px 5%" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
 
         {/* STEP 1 - ROLE */}
-        <div style={styles.chip}>Step 1 of 2 - Choose your role</div>
-        <h2 style={{ ...styles.h2, marginBottom: 6 }}>What role are you interviewing for?</h2>
-        <p style={{ color: "#4a7070", marginBottom: 24, fontSize: 15 }}>Questions will be tailored to your specialization.</p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 14 }}>
+        <div style={styles.chip}>Step 1 of 2</div>
+        <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Role</h2>
+        <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>Questions will be tailored to your specialization.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }} className="grid-2col">
           {ROLES.map(r => (
-            <div key={r.id}
-              onClick={() => setRole(r)}
-              style={{ ...styles.card, cursor: "pointer", transition: "all .18s",
+            <div key={r.id} onClick={() => setRole(r)}
+              style={{ ...styles.card, cursor: "pointer", transition: "all .18s", display: "flex", alignItems: "center", gap: 14,
                 borderColor: role?.id === r.id ? T : TM,
                 background: role?.id === r.id ? TL : "white",
-                transform: role?.id === r.id ? "scale(1.03)" : "" }}
-              onMouseEnter={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = TD; e.currentTarget.style.transform = "translateY(-2px)"; }}}
+                borderWidth: role?.id === r.id ? 2 : 1.5 }}
+              onMouseEnter={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-2px)"; }}}
               onMouseLeave={e => { if (role?.id !== r.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>{r.emoji}</div>
-              <div style={{ fontWeight: 700, color: DARK }}>{r.label}</div>
+              <div style={{ width: 44, height: 44, flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: r.icon }} />
+              <div style={{ fontWeight: 700, color: DARK, fontSize: 14 }}>{r.label}</div>
+              {role?.id === r.id && <div style={{ marginLeft: "auto", color: T, fontSize: 16 }}>✓</div>}
             </div>
           ))}
         </div>
 
         {/* STEP 2 - LEVEL */}
-        <div style={{ marginTop: 48 }}>
-          <div style={styles.chip}>Step 2 of 2 - Choose your level</div>
-          <h2 style={{ ...styles.h2, marginBottom: 6 }}>What is your experience level?</h2>
-          <p style={{ color: "#4a7070", marginBottom: 24, fontSize: 15 }}>AI will adjust question complexity and scoring accordingly.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
+        <div style={{ marginTop: 52 }}>
+          <div style={styles.chip}>Step 2 of 2</div>
+          <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Level</h2>
+          <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>AI adjusts question complexity and scoring to your experience.</p>
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             {LEVELS.map(lv => (
-              <div key={lv.id}
-                onClick={() => setLevel(lv)}
-                style={{ ...styles.card, cursor: "pointer", transition: "all .18s", textAlign: "center",
+              <div key={lv.id} onClick={() => setLevel(lv)}
+                style={{ ...styles.card, cursor: "pointer", transition: "all .18s", textAlign: "center", flex: "1 1 130px", minWidth: 110,
                   borderColor: level?.id === lv.id ? T : TM,
                   background: level?.id === lv.id ? TL : "white",
-                  transform: level?.id === lv.id ? "scale(1.03)" : "" }}
-                onMouseEnter={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = TD; e.currentTarget.style.transform = "translateY(-2px)"; }}}
+                  borderWidth: level?.id === lv.id ? 2 : 1.5 }}
+                onMouseEnter={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-2px)"; }}}
                 onMouseLeave={e => { if (level?.id !== lv.id) { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{lv.emoji}</div>
-                <div style={{ fontWeight: 700, color: DARK, marginBottom: 4 }}>{lv.label}</div>
-                <div style={{ fontSize: 12, color: "#4a7070", lineHeight: 1.4 }}>{lv.desc}</div>
+                <div style={{ width: 44, height: 44, margin: "0 auto 10px" }} dangerouslySetInnerHTML={{ __html: lv.icon }} />
+                <div style={{ fontWeight: 700, color: DARK, fontSize: 14, marginBottom: 3 }}>{lv.label}</div>
+                <div style={{ fontSize: 11.5, color: GREY }}>{lv.desc}</div>
+                {level?.id === lv.id && <div style={{ marginTop: 6, color: T, fontSize: 14, fontWeight: 700 }}>✓</div>}
               </div>
             ))}
+          </div>
+
+          {/* Robot helper */}
+          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: 12, marginTop: 24 }}>
+            <div style={{ background: "white", border: `1.5px solid ${TM}`, borderRadius: "16px 16px 0 16px", padding: "10px 16px", fontSize: 13, color: DARK, fontWeight: 500, boxShadow: `0 4px 12px ${T}18` }}>
+              {!role && !level ? "Pick a role and level to begin!" : !role ? "Now choose your role!" : !level ? "Great! Now pick your level." : "You're all set — let's go! 🚀"}
+            </div>
+            <svg width="60" height="72" viewBox="0 0 130 160" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="35" y="22" width="60" height="54" rx="20" fill="white" stroke={T} strokeWidth="2"/>
+              <line x1="65" y1="22" x2="65" y2="10" stroke={T} strokeWidth="2"/>
+              <circle cx="65" cy="8" r="4" fill={T}/>
+              <circle cx="52" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+              <circle cx="78" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+              <circle cx="54" cy="43" r="3" fill={T}/>
+              <circle cx="80" cy="43" r="3" fill={T}/>
+              <path d="M55 56 Q65 63 75 56" stroke={T} strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <rect x="20" y="38" width="14" height="22" rx="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+              <rect x="96" y="38" width="14" height="22" rx="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+              <path d="M36 36 Q65 14 94 36" stroke={T} strokeWidth="2" fill="none"/>
+            </svg>
           </div>
         </div>
 
         {micAllowed === false && (
-          <div style={{ marginTop: 24, background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 10, padding: 16, color: "#b91c1c", fontSize: 14 }}>
-            Microphone access was denied. Please allow microphone access in your browser settings and reload.
+          <div style={{ marginTop: 20, background: "#fff0f0", border: "1.5px solid #fca5a5", borderRadius: 16, padding: 16, color: "#b91c1c", fontSize: 14 }}>
+            Microphone access was denied. Please allow it in your browser settings and reload.
           </div>
         )}
 
-        <div style={{ marginTop: 32, display: "flex", gap: 12 }}>
-          <button style={{ ...styles.bigBtn, opacity: (role && level) ? 1 : 0.45 }} disabled={!role || !level} onClick={startSession}>
+        <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <button className="btn-hover" style={{ ...styles.bigBtn, opacity: (role && level) ? 1 : 0.45 }} disabled={!role || !level} onClick={startSession}>
             🎤 Start Interview
           </button>
-          <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `2px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("home")}>Back</button>
+          <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("home")}>Back</button>
         </div>
       </div>
     </Shell>
@@ -542,7 +621,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
   // ── INTERVIEW ─────────────────────────────────────────────────────────────
   if (page === "interview") return (
-    <div style={{ fontFamily: "'DM Sans',sans-serif", background: DARK, minHeight: "100vh", color: "white" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", background: DARK, minHeight: "100vh", color: "white" }}>
       <style>{CSS}</style>
       {/* top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 60, borderBottom: "1px solid #1e3535" }}>
@@ -595,37 +674,43 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Session Complete</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Your Interview Feedback</h2>
-        <p style={{ color: "#4a7070", marginBottom: 32 }}>Role: <strong>{level?.label} {role?.label}</strong> - {transcript.filter(e => e.role === "user").length} answers recorded</p>
+        <p style={{ color: GREY, marginBottom: 32 }}>Role: <strong style={{ color: DARK }}>{level?.label} {role?.label}</strong> — {transcript.filter(e => e.role === "user").length} answers recorded</p>
 
         {loadingFB ? (
-          <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🤖</div>
-            <p style={{ color: TD, fontWeight: 700 }}>Analyzing your interview…</p>
-            <Waveform active={true} />
+          <div style={{ ...styles.card, textAlign: "center", padding: 56 }}>
+            <svg width="60" height="72" viewBox="0 0 130 160" fill="none" style={{ animation: "float 2s ease-in-out infinite", marginBottom: 16 }}>
+              <rect x="35" y="22" width="60" height="54" rx="20" fill="white" stroke={T} strokeWidth="2"/>
+              <circle cx="52" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+              <circle cx="78" cy="42" r="7" fill={TL} stroke={T} strokeWidth="1.5"/>
+              <circle cx="54" cy="43" r="3" fill={T}/>
+              <circle cx="80" cy="43" r="3" fill={T}/>
+              <path d="M55 56 Q65 63 75 56" stroke={T} strokeWidth="2" strokeLinecap="round" fill="none"/>
+            </svg>
+            <p style={{ color: TD, fontWeight: 700, fontSize: 15 }}>Analyzing your interview...</p>
+            <Waveform active={true} color={T} />
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .5s ease" }}>
-            {/* score */}
             {fb.score && (
               <div style={{ ...styles.card, display: "flex", alignItems: "center", gap: 24 }}>
-                <div style={{ fontSize: 56, fontWeight: 800, color: T, lineHeight: 1 }}>{fb.score}<span style={{ fontSize: 20, color: "#4a7070" }}>/10</span></div>
+                <div style={{ fontSize: 60, fontWeight: 800, color: T, lineHeight: 1, flexShrink: 0 }}>{fb.score}<span style={{ fontSize: 22, color: GREY }}>/10</span></div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 17, color: DARK, marginBottom: 4 }}>Overall Score</div>
-                  <div style={{ color: "#4a7070", fontSize: 13 }}>{parseInt(fb.score) >= 7 ? "You're interview-ready 🚀" : parseInt(fb.score) >= 5 ? "Good progress, keep practicing" : "Room to grow - practice makes perfect"}</div>
+                  <div style={{ fontWeight: 700, fontSize: 17, color: DARK, marginBottom: 5 }}>Overall Score</div>
+                  <div style={{ color: GREY, fontSize: 14 }}>{parseInt(fb.score) >= 7 ? "You're interview-ready! 🚀" : parseInt(fb.score) >= 5 ? "Good progress, keep practicing." : "Room to grow — practice makes perfect."}</div>
                 </div>
               </div>
             )}
-            {fb.verdict && <FBCard icon="🏁" title="Verdict" text={fb.verdict} color={T} />}
-            {fb.strengths && <FBCard icon="💪" title="Strengths" text={fb.strengths} color="#22c55e" />}
-            {fb.weaknesses && <FBCard icon="🔧" title="Areas to Improve" text={fb.weaknesses} color="#f59e0b" />}
-            {fb.tips && <FBCard icon="💡" title="Tips for Next Time" text={fb.tips} color={TD} />}
-            {!fb.score && feedbackRaw && <div style={{ ...styles.card, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7, color: "#334" }}>{feedbackRaw}</div>}
+            {fb.verdict    && <FBCard icon="🏁" title="Verdict"          text={fb.verdict}    color={T}         />}
+            {fb.strengths  && <FBCard icon="💪" title="Strengths"        text={fb.strengths}  color="#22c55e"   />}
+            {fb.weaknesses && <FBCard icon="🔧" title="Areas to Improve" text={fb.weaknesses} color="#f59e0b"   />}
+            {fb.tips       && <FBCard icon="💡" title="Tips for Next Time" text={fb.tips}     color={TD}        />}
+            {!fb.score && feedbackRaw && <div style={{ ...styles.card, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7, color: GREY }}>{feedbackRaw}</div>}
           </div>
         )}
 
         <div style={{ marginTop: 28, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); }}>Practice Again</button>
-          <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `2px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
+          <button className="btn-hover" style={styles.bigBtn} onClick={() => { setPage("select"); setTranscript([]); setFeedbackRaw(""); setRole(null); setLevel(null); }}>Practice Again</button>
+          <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => setPage("resources")}>View Job Sites →</button>
         </div>
       </div>
     </Shell>
@@ -637,17 +722,15 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Job Search</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>17 Best Job Sites for IT Professionals</h2>
-        <p style={{ color: "#4a7070", marginBottom: 36, fontSize: 15 }}>Curated from community recommendations. Remote-first, tech-focused.</p>
+        <p style={{ color: GREY, marginBottom: 36, fontSize: 15 }}>Curated from community recommendations. Remote-first, tech-focused.</p>
         <div style={styles.grid3}>
           {JOB_SITES.map((s, i) => (
             <a key={i} href={s.url} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
-              <div style={{ ...styles.card, cursor: "pointer", transition: "all .18s", animationDelay: `${i * 0.04}s`, animation: "fadeIn .4s ease both" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = T; e.currentTarget.style.transform = "translateY(-3px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = TM; e.currentTarget.style.transform = ""; }}>
-                <span style={{ ...styles.tag, marginBottom: 8, display: "inline-block" }}>{s.tag}</span>
-                <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK, margin: "4px 0 5px" }}>{s.name}</h4>
-                <p style={{ color: "#4a7070", fontSize: 13, margin: 0, lineHeight: 1.5 }}>{s.desc}</p>
-                <div style={{ marginTop: 10, fontSize: 12, color: T, fontWeight: 600 }}>{s.url.replace("https://", "")} ↗</div>
+              <div className="card-hover" style={{ ...styles.card, cursor: "pointer", transition: "all .18s", height: "100%" }}>
+                <span style={{ ...styles.tag, marginBottom: 12, display: "inline-block" }}>{s.tag}</span>
+                <h4 style={{ fontWeight: 700, fontSize: 15, color: DARK, margin: "0 0 6px" }}>{s.name}</h4>
+                <p style={{ color: GREY, fontSize: 13, margin: "0 0 12px", lineHeight: 1.5 }}>{s.desc}</p>
+                <div style={{ fontSize: 12, color: T, fontWeight: 600 }}>{s.url.replace("https://", "")} ↗</div>
               </div>
             </a>
           ))}
@@ -662,25 +745,36 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
 function Shell({ children, active, onNav }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
-    <div style={{ fontFamily: "'DM Sans',sans-serif", background: "#f4fefe", minHeight: "100vh", color: "#0b1f1f" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", background: BG, minHeight: "100vh", color: DARK }}>
       <style>{CSS}</style>
-      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 62, background: "white", borderBottom: `1px solid ${TM}`, position: "sticky", top: 0, zIndex: 100 }}>
-        <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer" }} onClick={() => onNav("home")}>
-          InterviewAI <span style={{ color: T, fontSize: 11, fontWeight: 500 }}>for IT</span>
+      <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 64, background: "white", borderBottom: `1.5px solid ${TM}`, position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(69,162,158,0.07)" }}>
+        <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer", letterSpacing: -0.3 }} onClick={() => { onNav("home"); setMenuOpen(false); }}>
+          Interview<span style={{ color: T }}>AI</span> <span style={{ color: GREY, fontSize: 11, fontWeight: 500 }}>for IT</span>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        {/* Desktop nav */}
+        <div className="hide-mobile" style={{ display: "flex", gap: 4 }}>
           {[["home","Home"],["select","Practice"],["resources","Job Sites"]].map(([id,label]) => (
-            <button key={id} onClick={() => onNav(id)} style={{ background: active === id ? TL : "transparent", color: active === id ? TD : "#4a7070", border: active === id ? `1px solid ${TM}` : "1px solid transparent", borderRadius: 8, padding: "7px 15px", fontWeight: active === id ? 700 : 500, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}>
+            <button key={id} onClick={() => onNav(id)} style={{ background: active === id ? TL : "transparent", color: active === id ? TD : GREY, border: active === id ? `1.5px solid ${TM}` : "1.5px solid transparent", borderRadius: 30, padding: "8px 18px", fontWeight: active === id ? 700 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
               {label}
             </button>
           ))}
         </div>
+        {/* Mobile hamburger */}
+        <button onClick={() => setMenuOpen(o => !o)} style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 8, fontSize: 20 }} className="mobile-full" style2={{ display: "block" }}>
+          {menuOpen ? "✕" : "☰"}
+        </button>
+        <div style={{ display: menuOpen ? "block" : "none", position: "absolute", top: 64, left: 0, right: 0, background: "white", borderBottom: `1.5px solid ${TM}`, padding: "12px 5%", zIndex: 99 }}>
+          {[["home","Home"],["select","Practice"],["resources","Job Sites"]].map(([id,label]) => (
+            <div key={id} onClick={() => { onNav(id); setMenuOpen(false); }} style={{ padding: "14px 0", fontWeight: active === id ? 700 : 500, color: active === id ? T : DARK, borderBottom: `1px solid ${TM}`, cursor: "pointer", fontSize: 16 }}>{label}</div>
+          ))}
+        </div>
       </nav>
       {children}
-      <footer style={{ background: DARK, color: TM, textAlign: "center", padding: "28px 5%", fontSize: 12 }}>
-        <p style={{ margin: 0 }}>InterviewAI for IT - Powered by Claude AI - Open Source on GitHub</p>
-        <p style={{ margin: "5px 0 0", opacity: 0.5 }}>Free forever - No account required - Voice-first</p>
+      <footer style={{ background: DARK, color: TM, textAlign: "center", padding: "32px 5%", fontSize: 12 }}>
+        <p style={{ margin: 0, fontWeight: 600 }}>InterviewAI for IT — Powered by Claude AI — Open Source on GitHub</p>
+        <p style={{ margin: "6px 0 0", opacity: 0.5 }}>Free forever · No account required · Voice-first</p>
       </footer>
     </div>
   );
@@ -688,40 +782,52 @@ function Shell({ children, active, onNav }) {
 
 function FBCard({ icon, title, text, color }) {
   return (
-    <div style={{ background: "white", border: `1px solid ${TM}`, borderLeft: `4px solid ${color}`, borderRadius: 14, padding: 20 }}>
-      <div style={{ fontWeight: 700, fontSize: 15, color: "#0b1f1f", marginBottom: 10 }}>{icon} {title}</div>
-      <div style={{ fontSize: 14, lineHeight: 1.75, color: "#2a4a4a", whiteSpace: "pre-line" }}>{text}</div>
+    <div style={{ background: "white", border: `1.5px solid ${TM}`, borderLeft: `4px solid ${color}`, borderRadius: 20, padding: 22 }}>
+      <div style={{ fontWeight: 700, fontSize: 15, color: DARK, marginBottom: 10 }}>{icon} {title}</div>
+      <div style={{ fontSize: 14, lineHeight: 1.75, color: GREY, whiteSpace: "pre-line" }}>{text}</div>
     </div>
   );
 }
 
 function CtaBanner({ onStart }) {
   return (
-    <div style={{ background: `linear-gradient(135deg, ${DARK}, #0a3030)`, padding: "56px 5%", textAlign: "center" }}>
-      <h2 style={{ color: "white", fontSize: 28, fontWeight: 800, marginBottom: 10 }}>Ready to practice?</h2>
-      <p style={{ color: TM, marginBottom: 26, fontSize: 15 }}>20-minute voice session. Real questions. Real AI feedback.</p>
-      <button style={styles.bigBtn} onClick={onStart}>🎤 Start Voice Interview →</button>
+    <div style={{ background: `linear-gradient(135deg, ${DARK}, #0f3030)`, padding: "60px 5%", textAlign: "center" }}>
+      <h2 style={{ color: "white", fontSize: "clamp(1.5rem,3vw,2rem)", fontWeight: 800, marginBottom: 10 }}>Ready to practice?</h2>
+      <p style={{ color: TM, marginBottom: 28, fontSize: 15 }}>20-minute voice session. Real AI questions. Real feedback.</p>
+      <button className="btn-hover" style={styles.bigBtn} onClick={onStart}>🎤 Start Voice Interview</button>
     </div>
   );
 }
 
 // ── SHARED STYLES ─────────────────────────────────────────────────────────────
 const styles = {
-  chip:   { display: "inline-block", background: TL, color: TD, borderRadius: 20, padding: "4px 14px", fontSize: 11.5, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 14 },
+  chip:   { display: "inline-block", background: TL, color: TD, borderRadius: 30, padding: "5px 16px", fontSize: 11.5, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 14 },
   h1:     { fontSize: "clamp(2rem,5vw,3rem)", fontWeight: 800, lineHeight: 1.15, color: DARK, margin: "0 0 14px" },
   h2:     { fontSize: "clamp(1.5rem,3vw,2.2rem)", fontWeight: 800, color: DARK, margin: "0 0 24px" },
-  sub:    { fontSize: 17, color: "#4a7070", maxWidth: 540, margin: "0 auto 36px", lineHeight: 1.65 },
+  sub:    { fontSize: 17, color: GREY, maxWidth: 540, margin: "0 auto 36px", lineHeight: 1.65 },
   row:    { display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" },
-  bigBtn: { background: T, color: "white", border: "none", borderRadius: 11, padding: "13px 30px", fontWeight: 700, fontSize: 15, cursor: "pointer", boxShadow: `0 4px 20px ${T}44`, fontFamily: "inherit", transition: "all .2s" },
-  card:   { background: "white", borderRadius: 14, padding: 22, border: `1px solid ${TM}`, boxShadow: "0 2px 12px rgba(0,180,180,0.07)" },
+  bigBtn: { background: T, color: "white", border: "none", borderRadius: 30, padding: "14px 32px", fontWeight: 700, fontSize: 15, cursor: "pointer", boxShadow: `0 4px 20px ${T}44`, fontFamily: "inherit", transition: "all .2s", display: "inline-flex", alignItems: "center", gap: 8 },
+  card:   { background: "white", borderRadius: 20, padding: 22, border: `1.5px solid ${TM}`, boxShadow: "0 2px 16px rgba(69,162,158,0.08)" },
   grid3:  { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 16 },
-  tag:    { background: TL, color: TD, borderRadius: 7, padding: "3px 9px", fontSize: 11, fontWeight: 700 },
+  tag:    { background: TL, color: TD, borderRadius: 30, padding: "4px 12px", fontSize: 11, fontWeight: 700 },
 };
 
 const CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;800&display=swap');
-  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes wave   { 0%,100%{height:6px} 50%{height:26px} }
-  * { box-sizing: border-box; }
-  body { margin: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap');
+  @keyframes fadeIn  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  @keyframes wave    { 0%,100%{height:6px} 50%{height:26px} }
+  @keyframes blobspin{ from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  * { box-sizing:border-box; }
+  body { margin:0; }
+  .btn-hover:hover { transform:translateY(-2px); box-shadow:0 8px 28px ${T}66 !important; }
+  .card-hover:hover { border-color:${T} !important; transform:translateY(-3px); box-shadow:0 8px 24px ${T}22 !important; }
+  @media(max-width:640px){
+    .hide-mobile{ display:none !important; }
+    .mobile-col{ flex-direction:column !important; }
+    .mobile-full{ width:100% !important; }
+    .mobile-pad{ padding:40px 20px !important; }
+    .mobile-center{ text-align:center !important; }
+    .grid-2col{ grid-template-columns:1fr 1fr !important; }
+  }
 `;
