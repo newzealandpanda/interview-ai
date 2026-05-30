@@ -162,7 +162,6 @@ export default function App() {
     rec.start();
   }, []);
 
-  const questionsAsked = useRef(0);
   const MAX_QUESTIONS = 7;
 
   // ── GROQ API CALL ─────────────────────────────────────────────────────────
