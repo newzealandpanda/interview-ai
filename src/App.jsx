@@ -827,6 +827,13 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
     </Shell>
   );
 
+  // ── RESUME CHECK ──────────────────────────────────────────────────────────
+  if (page === "resume") return (
+    <Shell active="resume" onNav={setPage}>
+      <ResumePage />
+    </Shell>
+  );
+
   // ── RESOURCES ─────────────────────────────────────────────────────────────
   if (page === "resources") return (
     <Shell active="resources" onNav={setPage}>
@@ -866,7 +873,7 @@ function Shell({ children, active, onNav }) {
         </div>
         {/* Desktop nav */}
         <div className="hide-mobile" style={{ display: "flex", gap: 4 }}>
-          {[["home","Home"],["select","Practice"],["resources","Job Sites"]].map(([id,label]) => (
+          {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"]].map(([id,label]) => (
             <button key={id} onClick={() => onNav(id)} style={{ background: active === id ? TL : "transparent", color: active === id ? TD : GREY, border: active === id ? `1.5px solid ${TM}` : "1.5px solid transparent", borderRadius: 30, padding: "8px 18px", fontWeight: active === id ? 700 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
               {label}
             </button>
@@ -877,7 +884,7 @@ function Shell({ children, active, onNav }) {
           {menuOpen ? "✕" : "☰"}
         </button>
         <div style={{ display: menuOpen ? "block" : "none", position: "absolute", top: 64, left: 0, right: 0, background: "white", borderBottom: `1.5px solid ${TM}`, padding: "12px 5%", zIndex: 99 }}>
-          {[["home","Home"],["select","Practice"],["resources","Job Sites"]].map(([id,label]) => (
+          {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"]].map(([id,label]) => (
             <div key={id} onClick={() => { onNav(id); setMenuOpen(false); }} style={{ padding: "14px 0", fontWeight: active === id ? 700 : 500, color: active === id ? T : DARK, borderBottom: `1px solid ${TM}`, cursor: "pointer", fontSize: 16 }}>{label}</div>
           ))}
         </div>
@@ -891,7 +898,154 @@ function Shell({ children, active, onNav }) {
   );
 }
 
-function FBCard({ icon, title, text, color }) {
+function ResumePage() {
+  const [file, setFile]         = useState(null);
+  const [targetRole, setTargetRole] = useState("QA Engineer");
+  const [loading, setLoading]   = useState(false);
+  const [result, setResult]     = useState(null);
+  const [error, setError]       = useState("");
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef();
+
+  function parseResumeFeedback(text) {
+    const get = (key, next) => {
+      const re = new RegExp(`${key}[:\\s]+([\\s\\S]*?)(?=${next}|$)`, "i");
+      const m = text.match(re);
+      return m ? m[1].trim() : "";
+    };
+    return {
+      score:    text.match(/OVERALL_SCORE[:\s]+(\d+)/i)?.[1] || "",
+      ats:      text.match(/ATS_SCORE[:\s]+(\d+)/i)?.[1] || "",
+      summary:  get("SUMMARY", "STRENGTHS|IMPROVEMENTS|ATS_SCORE|MISSING|VERDICT"),
+      strengths:get("STRENGTHS", "IMPROVEMENTS|ATS_SCORE|MISSING|VERDICT"),
+      improve:  get("IMPROVEMENTS", "ATS_SCORE|MISSING|VERDICT"),
+      ats_tips: get("ATS_TIPS", "MISSING|VERDICT"),
+      missing:  get("MISSING", "VERDICT"),
+      verdict:  get("VERDICT", "$$$"),
+    };
+  }
+
+  async function analyzeResume() {
+    if (!file) return;
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("resume", file);
+      formData.append("role", targetRole);
+      const res = await fetch("/api/resume", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.error) { setError(data.error); }
+      else { setResult(parseResumeFeedback(data.feedback)); }
+    } catch {
+      setError("Could not connect to server. Please try again.");
+    }
+    setLoading(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f?.type === "application/pdf") setFile(f);
+    else setError("Please upload a PDF file.");
+  }
+
+  const fb = result;
+
+  return (
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "52px 5%" }}>
+      <div style={styles.chip}>AI Resume Review</div>
+      <h2 style={{ ...styles.h2, marginBottom: 6 }}>Check Your Resume</h2>
+      <p style={{ color: GREY, marginBottom: 36, fontSize: 15 }}>Upload your PDF resume and get instant AI feedback tailored to your target role.</p>
+
+      {/* Upload area */}
+      <div
+        onDrop={handleDrop}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onClick={() => fileRef.current.click()}
+        style={{ ...styles.card, border: `2px dashed ${dragging ? T : file ? T : TM}`, background: dragging ? TL : file ? TL : "white", cursor: "pointer", textAlign: "center", padding: "40px 24px", transition: "all .2s" }}>
+        <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); } }} />
+        <div style={{ fontSize: 48, marginBottom: 12 }}>{file ? "📄" : "⬆️"}</div>
+        {file ? (
+          <>
+            <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{file.name}</div>
+            <div style={{ color: GREY, fontSize: 13 }}>{(file.size / 1024).toFixed(0)} KB · Click to change</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>Drop your PDF here or click to upload</div>
+            <div style={{ color: GREY, fontSize: 13 }}>PDF only · Max 5MB</div>
+          </>
+        )}
+      </div>
+
+      {/* Target role */}
+      <div style={{ marginTop: 20 }}>
+        <label style={{ fontWeight: 700, fontSize: 14, color: DARK, display: "block", marginBottom: 8 }}>Target Role</label>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {["QA Engineer","Frontend Developer","Backend Developer","DevOps / SRE","Product Manager","Data Engineer / ML","Full Stack Developer","iOS Developer","Android Developer"].map(r => (
+            <button key={r} onClick={() => setTargetRole(r)}
+              style={{ padding: "8px 16px", borderRadius: 30, border: `1.5px solid ${targetRole === r ? T : TM}`, background: targetRole === r ? TL : "white", color: targetRole === r ? TD : GREY, fontWeight: targetRole === r ? 700 : 500, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
+              {r}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && <div style={{ marginTop: 16, background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 12, padding: 14, color: "#b91c1c", fontSize: 14 }}>{error}</div>}
+
+      <button
+        className="btn-hover"
+        style={{ ...styles.bigBtn, marginTop: 24, opacity: file ? 1 : 0.45 }}
+        disabled={!file || loading}
+        onClick={analyzeResume}>
+        {loading ? "Analyzing..." : "🔍 Analyze Resume"}
+      </button>
+
+      {/* Loading state */}
+      {loading && (
+        <div style={{ ...styles.card, textAlign: "center", padding: 48, marginTop: 32 }}>
+          <div style={{ fontSize: 40, marginBottom: 12, animation: "float 2s ease-in-out infinite" }}>🤖</div>
+          <p style={{ color: TD, fontWeight: 700, fontSize: 15 }}>Reading your resume...</p>
+          <Waveform active={true} color={T} />
+        </div>
+      )}
+
+      {/* Results */}
+      {fb && (
+        <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .5s ease" }}>
+
+          {/* Score row */}
+          <div style={{ ...styles.card, display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ flex: 1, textAlign: "center", padding: "8px 0" }}>
+              <div style={{ fontSize: 48, fontWeight: 800, color: T, lineHeight: 1 }}>{fb.score}<span style={{ fontSize: 18, color: GREY }}>/10</span></div>
+              <div style={{ color: GREY, fontSize: 13, marginTop: 4 }}>Overall Score</div>
+            </div>
+            <div style={{ width: 1, background: TM }} />
+            <div style={{ flex: 1, textAlign: "center", padding: "8px 0" }}>
+              <div style={{ fontSize: 48, fontWeight: 800, color: TD, lineHeight: 1 }}>{fb.ats}<span style={{ fontSize: 18, color: GREY }}>/10</span></div>
+              <div style={{ color: GREY, fontSize: 13, marginTop: 4 }}>ATS Score</div>
+            </div>
+          </div>
+
+          {fb.summary   && <FBCard icon="📋" title="Summary"           text={fb.summary}   color={T}        />}
+          {fb.strengths && <FBCard icon="💪" title="Strengths"         text={fb.strengths} color="#22c55e"  />}
+          {fb.improve   && <FBCard icon="🔧" title="Improvements"      text={fb.improve}   color="#f59e0b"  />}
+          {fb.ats_tips  && <FBCard icon="🤖" title="ATS Optimization"  text={fb.ats_tips}  color={TD}       />}
+          {fb.missing   && <FBCard icon="⚠️" title="Missing Sections"  text={fb.missing}   color="#ef4444"  />}
+          {fb.verdict   && <FBCard icon="🏁" title="Next Steps"        text={fb.verdict}   color={T}        />}
+
+          <button className="btn-hover" style={{ ...styles.bigBtn, alignSelf: "flex-start" }} onClick={() => { setFile(null); setResult(null); }}>
+            Check Another Resume
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
   return (
     <div style={{ background: "white", border: `1.5px solid ${TM}`, borderLeft: `4px solid ${color}`, borderRadius: 20, padding: 22 }}>
       <div style={{ fontWeight: 700, fontSize: 15, color: DARK, marginBottom: 10 }}>{icon} {title}</div>
