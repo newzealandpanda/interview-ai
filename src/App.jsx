@@ -159,26 +159,71 @@ export default function App() {
   const startListening = useCallback((onResult) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setStatusMsg("Speech recognition not supported in this browser."); return; }
+
     const rec = new SR();
     recognRef.current = rec;
     rec.lang = "en-US";
-    rec.interimResults = false;
+    rec.interimResults = true;       // show live transcript as user speaks
     rec.maxAlternatives = 1;
-    rec.continuous = false;
+    rec.continuous = true;           // keep listening until silence detected
+
+    let finalText = "";
+    let silenceTimer = null;
+    const SILENCE_MS = 2200;         // stop 2.2s after user stops speaking
+
     setListening(true);
-    setStatusMsg("🎙 Listening… speak your answer");
+    setStatusMsg("🎙 Listening...");
+
     rec.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      setListening(false);
-      setStatusMsg("");
-      onResult(text);
+      let interim = "";
+      finalText = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          finalText += e.results[i][0].transcript + " ";
+        } else {
+          interim += e.results[i][0].transcript;
+        }
+      }
+      // Show live interim text
+      setStatusMsg("🎙 " + (finalText + interim).trim());
+
+      // Reset silence timer every time speech is detected
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        const result = finalText.trim() || (finalText + interim).trim();
+        if (result.length > 2) {
+          rec.stop();
+          setListening(false);
+          setStatusMsg("");
+          onResult(result);
+        }
+      }, SILENCE_MS);
     };
-    rec.onerror = () => { setListening(false); setStatusMsg("Couldn't hear you, try again"); };
-    rec.onend   = () => { setListening(false); };
+
+    rec.onerror = (e) => {
+      clearTimeout(silenceTimer);
+      if (e.error === "no-speech") {
+        // restart if no speech detected
+        setStatusMsg("🎙 No speech detected, listening again...");
+        rec.stop();
+        setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 500);
+      } else {
+        setListening(false);
+        setStatusMsg("Mic error: " + e.error + ". Try again.");
+      }
+    };
+
+    rec.onend = () => {
+      clearTimeout(silenceTimer);
+      // If we got text, it was already handled above
+      // If rec ended without result (e.g. timeout), restart
+      if (finalText.trim().length === 0 && !endedRef.current) {
+        setListening(false);
+      }
+    };
+
     rec.start();
   }, []);
-
-  const MAX_QUESTIONS = 7;
 
   // ── GROQ API CALL ─────────────────────────────────────────────────────────
   async function askGroq(messages, system) {
@@ -193,38 +238,61 @@ export default function App() {
 
   // ── SESSION FLOW ──────────────────────────────────────────────────────────
   const conversationRef = useRef([]); // {role: "user"|"assistant", content: string}
+  const MIN_QUESTIONS = 5;
+  const MAX_QUESTIONS = 12;
 
   const askNextQuestion = useCallback(async () => {
     if (endedRef.current) return;
-    if (questionsAsked.current >= MAX_QUESTIONS) { endSession(); return; }
 
     setStatusMsg("AI is thinking...");
     setSpeaking(true);
 
+    const asked = questionsAsked.current;
+    const timeSpent = TOTAL_SEC - timeLeft;
+    const timeRemaining = timeLeft;
+
+    // Let AI decide whether to continue or wrap up
     const system = `You are an experienced technical interviewer conducting a mock job interview for a ${level?.label} ${role?.label} position.
-Your job is to ask ONE interview question at a time based on the conversation so far.
-- Ask varied questions: technical skills, behavioral, situational, past experience
-- React naturally to the candidate's previous answer — follow up if something is interesting or vague
-- Keep questions concise, one sentence max
+
+Context:
+- Questions asked so far: ${asked}
+- Time remaining: ${Math.floor(timeRemaining / 60)} minutes
+- Minimum questions: ${MIN_QUESTIONS}, Maximum: ${MAX_QUESTIONS}
+
+Your job: based on the conversation so far, decide what to do next.
+
+Rules:
+- If fewer than ${MIN_QUESTIONS} questions asked: always ask another question
+- If time remaining < 3 minutes: wrap up with one final question or end
+- If ${MAX_QUESTIONS} questions asked: end the interview
+- Otherwise: use your judgment — if an answer was short or vague, follow up; if the interview feels complete, you can wrap up early
+- Ask varied questions: technical, behavioral, situational
+- React to what the candidate said — follow up on interesting or unclear points
+- Keep questions concise, one sentence
 - Do NOT repeat questions already asked
-- Do NOT add commentary like "Great answer!" — just ask the next question
-- Respond with the question only, nothing else`;
+- Do NOT add commentary — output the question only, OR output exactly "END_INTERVIEW" if you decide to end`;
 
     try {
-      const question = await askGroq(conversationRef.current, system);
+      const response = await askGroq(conversationRef.current, system);
       setSpeaking(false);
       setStatusMsg("");
 
-      if (!question || endedRef.current) return;
+      if (!response || endedRef.current) return;
+
+      // AI decided to end
+      if (response.trim().toUpperCase().includes("END_INTERVIEW") || asked >= MAX_QUESTIONS) {
+        endSession();
+        return;
+      }
 
       questionsAsked.current += 1;
       setQIndex(questionsAsked.current);
 
-      const aiEntry = { role: "ai", text: question };
+      const aiEntry = { role: "ai", text: response };
       setTranscript(prev => [...prev, aiEntry]);
       sessionRef.current = [...sessionRef.current, aiEntry];
 
-      speak(question, () => {
+      speak(response, () => {
         if (endedRef.current) return;
         startListening((userText) => {
           if (endedRef.current) return;
@@ -233,7 +301,7 @@ Your job is to ask ONE interview question at a time based on the conversation so
           sessionRef.current = [...sessionRef.current, uEntry];
           conversationRef.current = [
             ...conversationRef.current,
-            { role: "assistant", content: question },
+            { role: "assistant", content: response },
             { role: "user", content: userText },
           ];
           askNextQuestion();
@@ -244,7 +312,7 @@ Your job is to ask ONE interview question at a time based on the conversation so
       setStatusMsg("Connection error, retrying...");
       setTimeout(() => { if (!endedRef.current) askNextQuestion(); }, 2000);
     }
-  }, [role, level, speak, startListening]);
+  }, [role, level, speak, startListening, timeLeft]);
 
   async function startSession() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -499,11 +567,19 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
       </div>
 
       {/* status bar */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d2525", borderTop: "1px solid #1e3535", padding: "16px 5%", display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
-        {speaking && <><Waveform active={true} color={T} /><span style={{ color: TM, fontSize: 13, fontWeight: 600 }}>AI speaking…</span></>}
-        {listening && <><Waveform active={true} color="#7fffaa" /><span style={{ color: "#7fffaa", fontSize: 13, fontWeight: 600 }}>{statusMsg}</span></>}
-        {!speaking && !listening && <span style={{ color: "#4a7070", fontSize: 13 }}>Waiting…</span>}
-        <div style={{ marginLeft: "auto", color: "#4a7070", fontSize: 12 }}>Q {qIndex} / {MAX_QUESTIONS}</div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d2525", borderTop: "1px solid #1e3535", padding: "14px 5%", display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
+        {speaking && <><Waveform active={true} color={T} /><span style={{ color: TM, fontSize: 13, fontWeight: 600 }}>AI is speaking...</span></>}
+        {listening && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 520, overflow: "hidden" }}>
+            <Waveform active={true} color="#7fffaa" />
+            <span style={{ color: "#7fffaa", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {statusMsg || "🎙 Listening..."}
+            </span>
+          </div>
+        )}
+        {!speaking && !listening && statusMsg && <span style={{ color: "#f59e0b", fontSize: 13 }}>{statusMsg}</span>}
+        {!speaking && !listening && !statusMsg && <span style={{ color: "#4a7070", fontSize: 13 }}>Waiting...</span>}
+        <div style={{ marginLeft: "auto", color: "#4a7070", fontSize: 12, whiteSpace: "nowrap" }}>Q {qIndex} · up to {MAX_QUESTIONS}</div>
       </div>
     </div>
   );
