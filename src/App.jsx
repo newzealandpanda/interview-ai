@@ -237,51 +237,47 @@ export default function App() {
   }
 
   // ── SESSION FLOW ──────────────────────────────────────────────────────────
-  const conversationRef = useRef([]); // {role: "user"|"assistant", content: string}
+  const conversationRef = useRef([]);
   const MIN_QUESTIONS = 5;
   const MAX_QUESTIONS = 12;
 
-  const askNextQuestion = useCallback(async () => {
+  async function runInterviewTurn() {
     if (endedRef.current) return;
+
+    const asked = questionsAsked.current;
+    const timeRemaining = timeLeft;
 
     setStatusMsg("AI is thinking...");
     setSpeaking(true);
 
-    const asked = questionsAsked.current;
-    const timeSpent = TOTAL_SEC - timeLeft;
-    const timeRemaining = timeLeft;
+    // Build full conversation history for context
+    const history = conversationRef.current;
 
-    // Let AI decide whether to continue or wrap up
-    const system = `You are an experienced technical interviewer conducting a mock job interview for a ${level?.label} ${role?.label} position.
+    const system = `You are Alex, a sharp and experienced technical interviewer at a top tech company. You are interviewing a candidate for a ${level?.label} ${role?.label} position.
 
-Context:
-- Questions asked so far: ${asked}
-- Time remaining: ${Math.floor(timeRemaining / 60)} minutes
-- Minimum questions: ${MIN_QUESTIONS}, Maximum: ${MAX_QUESTIONS}
-
-Your job: based on the conversation so far, decide what to do next.
-
-Rules:
-- If fewer than ${MIN_QUESTIONS} questions asked: always ask another question
-- If time remaining < 3 minutes: wrap up with one final question or end
-- If ${MAX_QUESTIONS} questions asked: end the interview
-- Otherwise: use your judgment — if an answer was short or vague, follow up; if the interview feels complete, you can wrap up early
-- Ask varied questions: technical, behavioral, situational
-- React to what the candidate said — follow up on interesting or unclear points
-- Keep questions concise, one sentence
-- Do NOT repeat questions already asked
-- Do NOT add commentary — output the question only, OR output exactly "END_INTERVIEW" if you decide to end`;
+CRITICAL RULES:
+1. You MUST read the candidate's last answer carefully and react to it specifically
+2. If the answer was vague or missing details — dig deeper with a follow-up on THAT specific point
+3. If the answer mentioned a technology, project, or experience — ask about it specifically
+4. If the answer was strong — move to a new topic
+5. Never ask generic template questions — every question must feel like a natural continuation of the conversation
+6. One short question only — no preamble, no "Great answer!", no commentary
+7. Questions asked so far: ${asked}. Time remaining: ${Math.floor(timeRemaining / 60)} min.
+8. If questions asked < ${MIN_QUESTIONS} — always continue
+9. If time < 3 min OR questions >= ${MAX_QUESTIONS} — output only: END_INTERVIEW
+10. Output the question only — nothing else before or after`;
 
     try {
-      const response = await askGroq(conversationRef.current, system);
+      const response = await askGroq(history, system);
       setSpeaking(false);
       setStatusMsg("");
 
       if (!response || endedRef.current) return;
 
-      // AI decided to end
       if (response.trim().toUpperCase().includes("END_INTERVIEW") || asked >= MAX_QUESTIONS) {
-        endSession();
+        // Say goodbye before ending
+        const bye = "That's all the questions I have. Thank you for your time — I'll now prepare your feedback.";
+        speak(bye, () => endSession());
         return;
       }
 
@@ -292,6 +288,9 @@ Rules:
       setTranscript(prev => [...prev, aiEntry]);
       sessionRef.current = [...sessionRef.current, aiEntry];
 
+      // Add to conversation history BEFORE speaking
+      conversationRef.current = [...conversationRef.current, { role: "assistant", content: response }];
+
       speak(response, () => {
         if (endedRef.current) return;
         startListening((userText) => {
@@ -299,20 +298,19 @@ Rules:
           const uEntry = { role: "user", text: userText };
           setTranscript(prev => [...prev, uEntry]);
           sessionRef.current = [...sessionRef.current, uEntry];
-          conversationRef.current = [
-            ...conversationRef.current,
-            { role: "assistant", content: response },
-            { role: "user", content: userText },
-          ];
-          askNextQuestion();
+
+          // Add user answer to history BEFORE next turn
+          conversationRef.current = [...conversationRef.current, { role: "user", content: userText }];
+
+          runInterviewTurn();
         });
       });
     } catch {
       setSpeaking(false);
       setStatusMsg("Connection error, retrying...");
-      setTimeout(() => { if (!endedRef.current) askNextQuestion(); }, 2000);
+      setTimeout(() => { if (!endedRef.current) runInterviewTurn(); }, 2000);
     }
-  }, [role, level, speak, startListening, timeLeft]);
+  }
 
   async function startSession() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -332,8 +330,15 @@ Rules:
     setTimeLeft(TOTAL_SEC);
     setRunning(true);
     setPage("interview");
-    const greeting = `Hi! I'm your AI interviewer today. We have 20 minutes and I'll ask you around ${MAX_QUESTIONS} questions for a ${level?.label} ${role?.label} position. Take your time, speak clearly, and use examples from your experience. Let's begin!`;
-    speak(greeting, () => askNextQuestion());
+
+    // Seed the conversation so AI knows the context from the start
+    conversationRef.current = [{
+      role: "user",
+      content: `[SYSTEM] This is the start of a mock interview. Role: ${level?.label} ${role?.label}. Please begin with "Tell me about yourself" or a similar opener.`
+    }];
+
+    const greeting = `Hi, I'm Alex, your interviewer today. We have 20 minutes. I'll be asking questions for a ${level?.label} ${role?.label} position. Feel free to take your time. Let's get started!`;
+    speak(greeting, () => runInterviewTurn());
   }
 
   function endSession() {
