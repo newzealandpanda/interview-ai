@@ -899,13 +899,49 @@ function Shell({ children, active, onNav }) {
 }
 
 function ResumePage() {
-  const [file, setFile]         = useState(null);
+  const [file, setFile]             = useState(null);
   const [targetRole, setTargetRole] = useState("QA Engineer");
-  const [loading, setLoading]   = useState(false);
-  const [result, setResult]     = useState(null);
-  const [error, setError]       = useState("");
-  const [dragging, setDragging] = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [result, setResult]         = useState(null);
+  const [error, setError]           = useState("");
+  const [dragging, setDragging]     = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const fileRef = useRef();
+
+  // Load PDF.js from CDN once
+  useEffect(() => {
+    if (window.pdfjsLib) return;
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    };
+    document.head.appendChild(script);
+  }, []);
+
+  async function extractTextFromPDF(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const typedArray = new Uint8Array(e.target.result);
+          const pdf = await window.pdfjsLib.getDocument({ data: typedArray }).promise;
+          let fullText = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            const pageText = content.items.map(item => item.str).join(" ");
+            fullText += pageText + "\n";
+          }
+          resolve(fullText);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
 
   function parseResumeFeedback(text) {
     const get = (key, next) => {
@@ -916,28 +952,51 @@ function ResumePage() {
     return {
       score:    text.match(/OVERALL_SCORE[:\s]+(\d+)/i)?.[1] || "",
       ats:      text.match(/ATS_SCORE[:\s]+(\d+)/i)?.[1] || "",
-      summary:  get("SUMMARY", "STRENGTHS|IMPROVEMENTS|ATS_SCORE|MISSING|VERDICT"),
-      strengths:get("STRENGTHS", "IMPROVEMENTS|ATS_SCORE|MISSING|VERDICT"),
+      summary:  get("SUMMARY",      "STRENGTHS|IMPROVEMENTS|ATS_SCORE|MISSING|VERDICT"),
+      strengths:get("STRENGTHS",    "IMPROVEMENTS|ATS_SCORE|MISSING|VERDICT"),
       improve:  get("IMPROVEMENTS", "ATS_SCORE|MISSING|VERDICT"),
-      ats_tips: get("ATS_TIPS", "MISSING|VERDICT"),
-      missing:  get("MISSING", "VERDICT"),
-      verdict:  get("VERDICT", "$$$"),
+      ats_tips: get("ATS_TIPS",     "MISSING|VERDICT"),
+      missing:  get("MISSING",      "VERDICT"),
+      verdict:  get("VERDICT",      "ZZZEND"),
     };
   }
 
   async function analyzeResume() {
     if (!file) return;
-    setLoading(true);
     setError("");
     setResult(null);
+
+    if (!window.pdfjsLib) {
+      setError("PDF reader is still loading, please wait a moment and try again.");
+      return;
+    }
+
+    setExtracting(true);
+    let resumeText = "";
     try {
-      const formData = new FormData();
-      formData.append("resume", file);
-      formData.append("role", targetRole);
-      const res = await fetch("/api/resume", { method: "POST", body: formData });
+      resumeText = await extractTextFromPDF(file);
+    } catch {
+      setExtracting(false);
+      setError("Could not read PDF. Make sure it's a text-based PDF (not a scanned image).");
+      return;
+    }
+    setExtracting(false);
+
+    if (!resumeText.trim()) {
+      setError("Could not extract text. Make sure your PDF is not a scanned image.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: resumeText, role: targetRole }),
+      });
       const data = await res.json();
-      if (data.error) { setError(data.error); }
-      else { setResult(parseResumeFeedback(data.feedback)); }
+      if (data.error) setError(data.error);
+      else setResult(parseResumeFeedback(data.feedback));
     } catch {
       setError("Could not connect to server. Please try again.");
     }
@@ -948,7 +1007,7 @@ function ResumePage() {
     e.preventDefault();
     setDragging(false);
     const f = e.dataTransfer.files[0];
-    if (f?.type === "application/pdf") setFile(f);
+    if (f?.type === "application/pdf") { setFile(f); setError(""); setResult(null); }
     else setError("Please upload a PDF file.");
   }
 
@@ -967,7 +1026,8 @@ function ResumePage() {
         onDragLeave={() => setDragging(false)}
         onClick={() => fileRef.current.click()}
         style={{ ...styles.card, border: `2px dashed ${dragging ? T : file ? T : TM}`, background: dragging ? TL : file ? TL : "white", cursor: "pointer", textAlign: "center", padding: "40px 24px", transition: "all .2s" }}>
-        <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); } }} />
+        <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); setResult(null); } }} />
         <div style={{ fontSize: 48, marginBottom: 12 }}>{file ? "📄" : "⬆️"}</div>
         {file ? (
           <>
@@ -977,7 +1037,7 @@ function ResumePage() {
         ) : (
           <>
             <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>Drop your PDF here or click to upload</div>
-            <div style={{ color: GREY, fontSize: 13 }}>PDF only · Max 5MB</div>
+            <div style={{ color: GREY, fontSize: 13 }}>PDF only · Max 5MB · Text-based (not scanned)</div>
           </>
         )}
       </div>
@@ -995,21 +1055,25 @@ function ResumePage() {
         </div>
       </div>
 
-      {error && <div style={{ marginTop: 16, background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 12, padding: 14, color: "#b91c1c", fontSize: 14 }}>{error}</div>}
+      {error && (
+        <div style={{ marginTop: 16, background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 12, padding: 14, color: "#b91c1c", fontSize: 14 }}>
+          {error}
+        </div>
+      )}
 
-      <button
-        className="btn-hover"
+      <button className="btn-hover"
         style={{ ...styles.bigBtn, marginTop: 24, opacity: file ? 1 : 0.45 }}
-        disabled={!file || loading}
+        disabled={!file || loading || extracting}
         onClick={analyzeResume}>
-        {loading ? "Analyzing..." : "🔍 Analyze Resume"}
+        {extracting ? "Reading PDF..." : loading ? "Analyzing..." : "🔍 Analyze Resume"}
       </button>
 
-      {/* Loading state */}
-      {loading && (
+      {(loading || extracting) && (
         <div style={{ ...styles.card, textAlign: "center", padding: 48, marginTop: 32 }}>
           <div style={{ fontSize: 40, marginBottom: 12, animation: "float 2s ease-in-out infinite" }}>🤖</div>
-          <p style={{ color: TD, fontWeight: 700, fontSize: 15 }}>Reading your resume...</p>
+          <p style={{ color: TD, fontWeight: 700, fontSize: 15 }}>
+            {extracting ? "Reading your PDF..." : "Analyzing your resume..."}
+          </p>
           <Waveform active={true} color={T} />
         </div>
       )}
@@ -1017,8 +1081,6 @@ function ResumePage() {
       {/* Results */}
       {fb && (
         <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .5s ease" }}>
-
-          {/* Score row */}
           <div style={{ ...styles.card, display: "flex", gap: 16, flexWrap: "wrap" }}>
             <div style={{ flex: 1, textAlign: "center", padding: "8px 0" }}>
               <div style={{ fontSize: 48, fontWeight: 800, color: T, lineHeight: 1 }}>{fb.score}<span style={{ fontSize: 18, color: GREY }}>/10</span></div>
@@ -1030,15 +1092,14 @@ function ResumePage() {
               <div style={{ color: GREY, fontSize: 13, marginTop: 4 }}>ATS Score</div>
             </div>
           </div>
-
-          {fb.summary   && <FBCard icon="📋" title="Summary"           text={fb.summary}   color={T}        />}
-          {fb.strengths && <FBCard icon="💪" title="Strengths"         text={fb.strengths} color="#22c55e"  />}
-          {fb.improve   && <FBCard icon="🔧" title="Improvements"      text={fb.improve}   color="#f59e0b"  />}
-          {fb.ats_tips  && <FBCard icon="🤖" title="ATS Optimization"  text={fb.ats_tips}  color={TD}       />}
-          {fb.missing   && <FBCard icon="⚠️" title="Missing Sections"  text={fb.missing}   color="#ef4444"  />}
-          {fb.verdict   && <FBCard icon="🏁" title="Next Steps"        text={fb.verdict}   color={T}        />}
-
-          <button className="btn-hover" style={{ ...styles.bigBtn, alignSelf: "flex-start" }} onClick={() => { setFile(null); setResult(null); }}>
+          {fb.summary    && <FBCard icon="📋" title="Summary"           text={fb.summary}   color={T}       />}
+          {fb.strengths  && <FBCard icon="💪" title="Strengths"         text={fb.strengths} color="#22c55e" />}
+          {fb.improve    && <FBCard icon="🔧" title="Improvements"      text={fb.improve}   color="#f59e0b" />}
+          {fb.ats_tips   && <FBCard icon="🤖" title="ATS Optimization"  text={fb.ats_tips}  color={TD}      />}
+          {fb.missing    && <FBCard icon="⚠️"  title="Missing Sections"  text={fb.missing}   color="#ef4444" />}
+          {fb.verdict    && <FBCard icon="🏁" title="Next Steps"        text={fb.verdict}   color={T}       />}
+          <button className="btn-hover" style={{ ...styles.bigBtn, alignSelf: "flex-start" }}
+            onClick={() => { setFile(null); setResult(null); }}>
             Check Another Resume
           </button>
         </div>
