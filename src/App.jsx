@@ -869,7 +869,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
   // ── PROFILE ───────────────────────────────────────────────────────────────
   if (page === "profile") return (
     <Shell active="profile" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
-      <ProfilePage user={user} onLogin={() => setPage("login")} />
+      <ProfilePage user={user} onLogin={() => setPage("login")} onDeleted={() => { setUser(null); setPage("home"); }} />
     </Shell>
   );
 
@@ -1002,12 +1002,13 @@ function Shell({ children, active, onNav, user, onLogout }) {
 
 // ── AUTH PAGE ─────────────────────────────────────────────────────────────────
 function AuthPage({ onSuccess }) {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail]     = useState("");
+  const [isLogin, setIsLogin]   = useState(true);
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-  const [message, setMessage] = useState("");
+  const [username, setUsername] = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [message, setMessage]   = useState("");
 
   async function handleSubmit() {
     setLoading(true);
@@ -1018,9 +1019,14 @@ function AuthPage({ onSuccess }) {
       if (error) setError(error.message);
       else onSuccess(data.user);
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setError(error.message);
-      else setMessage("Check your email to confirm your account, then sign in.");
+      if (!username.trim()) { setError("Please enter a username."); setLoading(false); return; }
+      if (username.length < 3) { setError("Username must be at least 3 characters."); setLoading(false); return; }
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) { setError(error.message); setLoading(false); return; }
+      if (data.user) {
+        await supabase.from("profiles").insert({ id: data.user.id, username: username.trim().toLowerCase() });
+      }
+      setMessage("Check your email to confirm your account, then sign in.");
     }
     setLoading(false);
   }
@@ -1051,6 +1057,16 @@ function AuthPage({ onSuccess }) {
           <span style={{ color: GREY, fontSize: 12 }}>or</span>
           <div style={{ flex: 1, height: 1, background: TM }} />
         </div>
+
+        {!isLogin && (
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontWeight: 600, fontSize: 13, color: DARK, display: "block", marginBottom: 6 }}>Username</label>
+            <input type="text" value={username} onChange={e => setUsername(e.target.value)}
+              placeholder="your_username"
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+            <div style={{ fontSize: 11, color: GREY, marginTop: 4 }}>Min 3 characters, lowercase. Shown on leaderboard.</div>
+          </div>
+        )}
 
         <div style={{ marginBottom: 14 }}>
           <label style={{ fontWeight: 600, fontSize: 13, color: DARK, display: "block", marginBottom: 6 }}>Email</label>
@@ -1087,19 +1103,44 @@ function AuthPage({ onSuccess }) {
 }
 
 // ── PROFILE PAGE ──────────────────────────────────────────────────────────────
-function ProfilePage({ user, onLogin }) {
-  const [results, setResults]   = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [expanded, setExpanded] = useState(null);
+function ProfilePage({ user, onLogin, onDeleted }) {
+  const [results, setResults]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [expanded, setExpanded]   = useState(null);
+  const [username, setUsername]   = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [saveMsg, setSaveMsg]     = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting]   = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("interview_results")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => { setResults(data || []); setLoading(false); });
+    Promise.all([
+      supabase.from("interview_results").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("profiles").select("username").eq("id", user.id).single()
+    ]).then(([{ data: results }, { data: profile }]) => {
+      setResults(results || []);
+      setUsername(profile?.username || "");
+      setLoading(false);
+    });
   }, [user]);
+
+  async function saveUsername() {
+    if (newUsername.trim().length < 3) { setSaveMsg("Min 3 characters."); return; }
+    const { error } = await supabase.from("profiles")
+      .upsert({ id: user.id, username: newUsername.trim().toLowerCase() });
+    if (error) setSaveMsg(error.message);
+    else { setUsername(newUsername.trim().toLowerCase()); setEditingName(false); setSaveMsg("Saved!"); setTimeout(() => setSaveMsg(""), 2000); }
+  }
+
+  async function deleteAccount() {
+    setDeleting(true);
+    await supabase.from("interview_results").delete().eq("user_id", user.id);
+    await supabase.from("profiles").delete().eq("id", user.id);
+    await supabase.auth.signOut();
+    onDeleted();
+  }
 
   if (!user) return (
     <div style={{ maxWidth: 500, margin: "80px auto", padding: "0 5%", textAlign: "center" }}>
@@ -1110,50 +1151,69 @@ function ProfilePage({ user, onLogin }) {
     </div>
   );
 
-  const avgScore = results.length ? Math.round(results.filter(r => r.score).reduce((a, b) => a + (b.score || 0), 0) / results.filter(r => r.score).length) : null;
+  const avgScore = results.filter(r => r.score).length
+    ? Math.round(results.filter(r => r.score).reduce((a, b) => a + (b.score || 0), 0) / results.filter(r => r.score).length)
+    : null;
   const modeColors = { Friendly: "#22c55e", Normal: T, Tough: "#ef4444" };
+  const displayName = username || user.email?.split("@")[0];
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
       <div style={styles.chip}>My Profile</div>
 
-      {/* User info */}
-      <div style={{ ...styles.card, display: "flex", alignItems: "center", gap: 20, marginBottom: 32, flexWrap: "wrap" }}>
-        <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${T}, ${TD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 22, fontWeight: 700, flexShrink: 0 }}>
-          {user.email?.[0]?.toUpperCase()}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 700, fontSize: 17, color: DARK }}>{user.email}</div>
-          <div style={{ color: GREY, fontSize: 13, marginTop: 2 }}>Member since {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
-        </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{results.length}</div>
-            <div style={{ fontSize: 12, color: GREY }}>Interviews</div>
+      {/* User info card */}
+      <div style={{ ...styles.card, marginBottom: 32 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", marginBottom: username || editingName ? 20 : 0 }}>
+          <div style={{ width: 60, height: 60, borderRadius: "50%", background: `linear-gradient(135deg, ${T}, ${TD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 24, fontWeight: 800, flexShrink: 0 }}>
+            {displayName?.[0]?.toUpperCase()}
           </div>
-          {avgScore && (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{avgScore}<span style={{ fontSize: 14, color: GREY }}>/10</span></div>
-              <div style={{ fontSize: 12, color: GREY }}>Avg Score</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ fontWeight: 700, fontSize: 18, color: DARK }}>{displayName}</div>
+              {!editingName && <span onClick={() => { setNewUsername(username); setEditingName(true); }} style={{ fontSize: 12, color: T, fontWeight: 600, cursor: "pointer", background: TL, padding: "2px 10px", borderRadius: 20 }}>Edit username</span>}
             </div>
-          )}
+            <div style={{ color: GREY, fontSize: 13, marginTop: 2 }}>{user.email}</div>
+            <div style={{ color: GREY, fontSize: 12, marginTop: 2 }}>Member since {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+          </div>
+          <div style={{ display: "flex", gap: 24 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{results.length}</div>
+              <div style={{ fontSize: 12, color: GREY }}>Interviews</div>
+            </div>
+            {avgScore && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{avgScore}<span style={{ fontSize: 14, color: GREY }}>/10</span></div>
+                <div style={{ fontSize: 12, color: GREY }}>Avg Score</div>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Edit username */}
+        {editingName && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", paddingTop: 16, borderTop: `1px solid ${TM}` }}>
+            <input value={newUsername} onChange={e => setNewUsername(e.target.value)}
+              placeholder="new_username"
+              style={{ flex: 1, minWidth: 160, padding: "9px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
+            <button className="btn-hover" style={{ ...styles.bigBtn, padding: "9px 20px", fontSize: 13 }} onClick={saveUsername}>Save</button>
+            <button onClick={() => setEditingName(false)} style={{ padding: "9px 16px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: GREY, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
+            {saveMsg && <span style={{ fontSize: 13, color: TD }}>{saveMsg}</span>}
+          </div>
+        )}
       </div>
 
+      {/* Interview history */}
       <h3 style={{ fontWeight: 700, fontSize: 18, color: DARK, marginBottom: 16 }}>Interview History</h3>
-
       {loading && <div style={{ textAlign: "center", padding: 40, color: GREY }}>Loading...</div>}
-
       {!loading && results.length === 0 && (
-        <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
+        <div style={{ ...styles.card, textAlign: "center", padding: 48, marginBottom: 32 }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🎤</div>
           <p style={{ color: GREY, fontSize: 15 }}>No interviews yet. Complete your first one to see results here!</p>
         </div>
       )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 48 }}>
         {results.map((r, i) => (
-          <div key={r.id} style={{ ...styles.card, cursor: "pointer", transition: "all .2s" }}
+          <div key={r.id} className="card-hover" style={{ ...styles.card, cursor: "pointer", transition: "all .2s" }}
             onClick={() => setExpanded(expanded === i ? null : i)}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
               <div style={{ flex: 1 }}>
@@ -1180,6 +1240,30 @@ function ProfilePage({ user, onLogin }) {
           </div>
         ))}
       </div>
+
+      {/* Danger zone */}
+      <div style={{ ...styles.card, border: "1.5px solid #fca5a5" }}>
+        <h4 style={{ fontWeight: 700, fontSize: 15, color: "#b91c1c", marginBottom: 8 }}>⚠️ Danger Zone</h4>
+        <p style={{ color: GREY, fontSize: 13, marginBottom: 16 }}>Deleting your account will permanently remove all your interview history and profile data. This cannot be undone.</p>
+        {!confirmDelete ? (
+          <button onClick={() => setConfirmDelete(true)}
+            style={{ padding: "10px 20px", borderRadius: 30, border: "1.5px solid #fca5a5", background: "white", color: "#b91c1c", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+            Delete Account
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 13, color: "#b91c1c", fontWeight: 600 }}>Are you sure? This cannot be undone.</span>
+            <button onClick={deleteAccount} disabled={deleting}
+              style={{ padding: "10px 20px", borderRadius: 30, border: "none", background: "#ef4444", color: "white", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+              {deleting ? "Deleting..." : "Yes, Delete Everything"}
+            </button>
+            <button onClick={() => setConfirmDelete(false)}
+              style={{ padding: "10px 16px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: GREY, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1194,16 +1278,22 @@ function ResumePage() {
   const [extracting, setExtracting] = useState(false);
   const fileRef = useRef();
 
-  // Load PDF.js from CDN once
+  // Load PDF.js and Mammoth from CDN once
   useEffect(() => {
-    if (window.pdfjsLib) return;
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-    script.onload = () => {
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-    };
-    document.head.appendChild(script);
+    if (!window.pdfjsLib) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.onload = () => {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      };
+      document.head.appendChild(script);
+    }
+    if (!window.mammoth) {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js";
+      document.head.appendChild(script);
+    }
   }, []);
 
   async function extractTextFromPDF(file) {
@@ -1217,19 +1307,69 @@ function ResumePage() {
           for (let i = 1; i <= pdf.numPages; i++) {
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
-            const pageText = content.items.map(item => item.str).join(" ");
-            fullText += pageText + "\n";
+            fullText += content.items.map(item => item.str).join(" ") + "\n";
           }
           resolve(fullText);
-        } catch (err) {
-          reject(err);
-        }
+        } catch (err) { reject(err); }
       };
       reader.readAsArrayBuffer(file);
     });
   }
 
-  function parseResumeFeedback(text) {
+  async function extractTextFromDOCX(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const result = await window.mammoth.extractRawText({ arrayBuffer: e.target.result });
+          resolve(result.value);
+        } catch (err) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function analyzeResume() {
+    if (!file) return;
+    setError("");
+    setResult(null);
+
+    const isPDF  = file.type === "application/pdf";
+    const isDOCX = file.name.endsWith(".docx");
+
+    if (isPDF && !window.pdfjsLib) { setError("PDF reader is still loading, please wait a moment and try again."); return; }
+    if (isDOCX && !window.mammoth) { setError("DOCX reader is still loading, please wait a moment and try again."); return; }
+
+    setExtracting(true);
+    let resumeText = "";
+    try {
+      if (isPDF)       resumeText = await extractTextFromPDF(file);
+      else if (isDOCX) resumeText = await extractTextFromDOCX(file);
+      else { setExtracting(false); setError("Please upload a PDF or DOCX file."); return; }
+    } catch {
+      setExtracting(false);
+      setError("Could not read file. Make sure it's a valid PDF or DOCX.");
+      return;
+    }
+    setExtracting(false);
+
+    if (!resumeText.trim()) { setError("Could not extract text. Make sure your file is not a scanned image."); return; }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: resumeText, role: targetRole }),
+      });
+      const data = await res.json();
+      if (data.error) setError(data.error);
+      else setResult(parseResumeFeedback(data.feedback));
+    } catch {
+      setError("Could not connect to server. Please try again.");
+    }
+    setLoading(false);
+  }
     const get = (key, next) => {
       const re = new RegExp(`${key}[:\\s]+([\\s\\S]*?)(?=${next}|$)`, "i");
       const m = text.match(re);
@@ -1247,54 +1387,12 @@ function ResumePage() {
     };
   }
 
-  async function analyzeResume() {
-    if (!file) return;
-    setError("");
-    setResult(null);
-
-    if (!window.pdfjsLib) {
-      setError("PDF reader is still loading, please wait a moment and try again.");
-      return;
-    }
-
-    setExtracting(true);
-    let resumeText = "";
-    try {
-      resumeText = await extractTextFromPDF(file);
-    } catch {
-      setExtracting(false);
-      setError("Could not read PDF. Make sure it's a text-based PDF (not a scanned image).");
-      return;
-    }
-    setExtracting(false);
-
-    if (!resumeText.trim()) {
-      setError("Could not extract text. Make sure your PDF is not a scanned image.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/resume", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: resumeText, role: targetRole }),
-      });
-      const data = await res.json();
-      if (data.error) setError(data.error);
-      else setResult(parseResumeFeedback(data.feedback));
-    } catch {
-      setError("Could not connect to server. Please try again.");
-    }
-    setLoading(false);
-  }
-
   function handleDrop(e) {
     e.preventDefault();
     setDragging(false);
     const f = e.dataTransfer.files[0];
-    if (f?.type === "application/pdf") { setFile(f); setError(""); setResult(null); }
-    else setError("Please upload a PDF file.");
+    if (f?.type === "application/pdf" || f?.name.endsWith(".docx")) { setFile(f); setError(""); setResult(null); }
+    else setError("Please upload a PDF or DOCX file.");
   }
 
   const fb = result;
@@ -1312,7 +1410,7 @@ function ResumePage() {
         onDragLeave={() => setDragging(false)}
         onClick={() => fileRef.current.click()}
         style={{ ...styles.card, border: `2px dashed ${dragging ? T : file ? T : TM}`, background: dragging ? TL : file ? TL : "white", cursor: "pointer", textAlign: "center", padding: "40px 24px", transition: "all .2s" }}>
-        <input ref={fileRef} type="file" accept=".pdf" style={{ display: "none" }}
+        <input ref={fileRef} type="file" accept=".pdf,.docx" style={{ display: "none" }}
           onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); setResult(null); } }} />
         <div style={{ fontSize: 48, marginBottom: 12 }}>{file ? "📄" : "⬆️"}</div>
         {file ? (
@@ -1322,8 +1420,8 @@ function ResumePage() {
           </>
         ) : (
           <>
-            <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>Drop your PDF here or click to upload</div>
-            <div style={{ color: GREY, fontSize: 13 }}>PDF only · Max 5MB · Text-based (not scanned)</div>
+            <div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>Drop your resume here or click to upload</div>
+            <div style={{ color: GREY, fontSize: 13 }}>PDF or DOCX · Max 5MB</div>
           </>
         )}
       </div>
