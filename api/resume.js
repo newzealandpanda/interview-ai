@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
     if (!pdfBuffer) return res.status(400).json({ error: "No PDF found in request" });
 
-    const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
+    const { default: pdfParse } = await import("pdf-parse");
     const pdf = await pdfParse(pdfBuffer);
     const text = pdf.text?.slice(0, 6000) || "";
 
