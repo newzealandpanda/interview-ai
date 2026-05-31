@@ -1143,7 +1143,7 @@ function ProfilePage({ user, onLogin }) {
   );
 }
 
-
+function ResumePage() {
   const [file, setFile]             = useState(null);
   const [targetRole, setTargetRole] = useState("QA Engineer");
   const [loading, setLoading]       = useState(false);
