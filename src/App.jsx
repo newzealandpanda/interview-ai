@@ -1370,6 +1370,8 @@ function ResumePage() {
     }
     setLoading(false);
   }
+
+  function parseResumeFeedback(text) {
     const get = (key, next) => {
       const re = new RegExp(`${key}[:\\s]+([\\s\\S]*?)(?=${next}|$)`, "i");
       const m = text.match(re);
