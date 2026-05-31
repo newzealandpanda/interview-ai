@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { text, role } = JSON.parse(req.body || "{}") || {};
+    const { text, role } = req.body;
 
     if (!text?.trim()) return res.status(400).json({ error: "No text provided" });
 
