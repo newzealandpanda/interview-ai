@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "./supabase.js";
 
 // ── PALETTE ──────────────────────────────────────────────────────────────────
 const T    = "#45A29E";   // Tiffany Primary
@@ -193,7 +194,20 @@ function Waveform({ active, color = T }) {
 
 // ── MAIN APP ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [page, setPage]           = useState("home");   // home | select | interview | feedback | resources
+  const [page, setPage]           = useState("home");
+  const [user, setUser]           = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user || null);
+      setAuthReady(true);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);   // home | select | interview | feedback | resources
   const [role, setRole]           = useState(null);
   const [level, setLevel]         = useState(null);
   const [mode, setMode]           = useState(null);
@@ -496,7 +510,25 @@ TIPS:
 VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
       const text = await askGroq([{ role: "user", content: prompt }], system);
-      setFeedbackRaw(text || "OVERALL_SCORE: N/A\nVERDICT: Could not generate feedback. Please try again.");
+      const finalText = text || "OVERALL_SCORE: N/A\nVERDICT: Could not generate feedback. Please try again.";
+      setFeedbackRaw(finalText);
+
+      // Save to Supabase if user is logged in
+      if (user) {
+        const scoreMatch = finalText.match(/OVERALL_SCORE[:\s]+(\d+)/i);
+        const verdictMatch = finalText.match(/VERDICT[:\s]+([\s\S]*?)$/i);
+        await supabase.from("interview_results").insert({
+          user_id: user.id,
+          role: role?.label,
+          level: level?.label,
+          mode: mode?.label,
+          duration,
+          score: scoreMatch ? parseInt(scoreMatch[1]) : null,
+          answers_count: answers.length,
+          feedback_raw: finalText,
+          verdict: verdictMatch ? verdictMatch[1].trim().slice(0, 500) : "",
+        });
+      }
     } catch {
       setFeedbackRaw("OVERALL_SCORE: N/A\nVERDICT: Could not connect to AI feedback service. Please check your connection.");
     }
@@ -514,7 +546,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
   // ── HOME ──────────────────────────────────────────────────────────────────
   if (page === "home") return (
-    <Shell active="home" onNav={setPage}>
+    <Shell active="home" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
       {/* HERO */}
       <div style={{ background: `linear-gradient(160deg, ${TL} 0%, white 60%)`, padding: "60px 5% 0", position: "relative", overflow: "hidden" }}>
 
@@ -603,7 +635,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
   // ── SELECT ROLE ───────────────────────────────────────────────────────────
   if (page === "select") return (
-    <Shell active="select" onNav={setPage}>
+    <Shell active="select" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
 
         {/* STEP 1 - ROLE */}
@@ -781,7 +813,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 
   // ── FEEDBACK ──────────────────────────────────────────────────────────────
   if (page === "feedback") return (
-    <Shell active="" onNav={setPage}>
+    <Shell active="" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Session Complete</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Your Interview Feedback</h2>
@@ -827,16 +859,30 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
     </Shell>
   );
 
+  // ── AUTH ──────────────────────────────────────────────────────────────────
+  if (page === "login") return (
+    <Shell active="login" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
+      <AuthPage onSuccess={(u) => { setUser(u); setPage("profile"); }} />
+    </Shell>
+  );
+
+  // ── PROFILE ───────────────────────────────────────────────────────────────
+  if (page === "profile") return (
+    <Shell active="profile" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
+      <ProfilePage user={user} onLogin={() => setPage("login")} />
+    </Shell>
+  );
+
   // ── RESUME CHECK ──────────────────────────────────────────────────────────
   if (page === "resume") return (
-    <Shell active="resume" onNav={setPage}>
+    <Shell active="resume" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
       <ResumePage />
     </Shell>
   );
 
   // ── RESOURCES ─────────────────────────────────────────────────────────────
   if (page === "resources") return (
-    <Shell active="resources" onNav={setPage}>
+    <Shell active="resources" onNav={setPage} user={user} onLogout={async () => { await supabase.auth.signOut(); setUser(null); setPage("home"); }}>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Job Search</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>17 Best Job Sites for IT Professionals</h2>
@@ -862,7 +908,7 @@ VERDICT: [2-3 encouraging sentences about readiness and next steps]`;
 }
 
 // ── SUB-COMPONENTS ────────────────────────────────────────────────────────────
-function Shell({ children, active, onNav }) {
+function Shell({ children, active, onNav, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", background: BG, minHeight: "100vh", color: DARK }}>
@@ -872,21 +918,36 @@ function Shell({ children, active, onNav }) {
           Interview<span style={{ color: T }}>AI</span> <span style={{ color: GREY, fontSize: 11, fontWeight: 500 }}>for IT</span>
         </div>
         {/* Desktop nav */}
-        <div className="hide-mobile" style={{ display: "flex", gap: 4 }}>
+        <div className="hide-mobile" style={{ display: "flex", gap: 4, alignItems: "center" }}>
           {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"]].map(([id,label]) => (
             <button key={id} onClick={() => onNav(id)} style={{ background: active === id ? TL : "transparent", color: active === id ? TD : GREY, border: active === id ? `1.5px solid ${TM}` : "1.5px solid transparent", borderRadius: 30, padding: "8px 18px", fontWeight: active === id ? 700 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
               {label}
             </button>
           ))}
+          {user ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: 8 }}>
+              <button onClick={() => onNav("profile")} style={{ background: active === "profile" ? TL : "transparent", color: active === "profile" ? TD : GREY, border: active === "profile" ? `1.5px solid ${TM}` : "1.5px solid transparent", borderRadius: 30, padding: "8px 18px", fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                👤 Profile
+              </button>
+              <button onClick={onLogout} style={{ background: "transparent", color: GREY, border: `1.5px solid ${TM}`, borderRadius: 30, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => onNav("login")} style={{ background: T, color: "white", border: "none", borderRadius: 30, padding: "8px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginLeft: 8 }}>
+              Sign In
+            </button>
+          )}
         </div>
         {/* Mobile hamburger */}
-        <button onClick={() => setMenuOpen(o => !o)} style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 8, fontSize: 20 }} className="mobile-full" style2={{ display: "block" }}>
+        <button onClick={() => setMenuOpen(o => !o)} style={{ background: "none", border: "none", cursor: "pointer", padding: 8, fontSize: 20, display: "none" }} className="show-mobile">
           {menuOpen ? "✕" : "☰"}
         </button>
         <div style={{ display: menuOpen ? "block" : "none", position: "absolute", top: 64, left: 0, right: 0, background: "white", borderBottom: `1.5px solid ${TM}`, padding: "12px 5%", zIndex: 99 }}>
-          {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"]].map(([id,label]) => (
-            <div key={id} onClick={() => { onNav(id); setMenuOpen(false); }} style={{ padding: "14px 0", fontWeight: active === id ? 700 : 500, color: active === id ? T : DARK, borderBottom: `1px solid ${TM}`, cursor: "pointer", fontSize: 16 }}>{label}</div>
+          {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"],["profile", user ? "👤 Profile" : "Sign In"]].map(([id,label]) => (
+            <div key={id} onClick={() => { onNav(id === "profile" && !user ? "login" : id); setMenuOpen(false); }} style={{ padding: "14px 0", fontWeight: active === id ? 700 : 500, color: active === id ? T : DARK, borderBottom: `1px solid ${TM}`, cursor: "pointer", fontSize: 16 }}>{label}</div>
           ))}
+          {user && <div onClick={() => { onLogout(); setMenuOpen(false); }} style={{ padding: "14px 0", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>Sign Out</div>}
         </div>
       </nav>
       {children}
@@ -898,7 +959,191 @@ function Shell({ children, active, onNav }) {
   );
 }
 
-function ResumePage() {
+// ── AUTH PAGE ─────────────────────────────────────────────────────────────────
+function AuthPage({ onSuccess }) {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail]     = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState("");
+  const [message, setMessage] = useState("");
+
+  async function handleSubmit() {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    if (isLogin) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) setError(error.message);
+      else onSuccess(data.user);
+    } else {
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) setError(error.message);
+      else setMessage("Check your email to confirm your account, then sign in.");
+    }
+    setLoading(false);
+  }
+
+  async function handleGoogle() {
+    await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+  }
+
+  return (
+    <div style={{ maxWidth: 420, margin: "60px auto", padding: "0 5%" }}>
+      <div style={{ ...styles.card, padding: 36 }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🤖</div>
+          <h2 style={{ ...styles.h2, fontSize: 22, margin: "0 0 6px" }}>{isLogin ? "Welcome back" : "Create account"}</h2>
+          <p style={{ color: GREY, fontSize: 14, margin: 0 }}>
+            {isLogin ? "Sign in to see your interview history" : "Save your results and track progress"}
+          </p>
+        </div>
+
+        <button onClick={handleGoogle}
+          style={{ width: "100%", padding: "12px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: DARK, fontWeight: 600, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <div style={{ flex: 1, height: 1, background: TM }} />
+          <span style={{ color: GREY, fontSize: 12 }}>or</span>
+          <div style={{ flex: 1, height: 1, background: TM }} />
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontWeight: 600, fontSize: 13, color: DARK, display: "block", marginBottom: 6 }}>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ fontWeight: 600, fontSize: 13, color: DARK, display: "block", marginBottom: 6 }}>Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+            placeholder="••••••••"
+            onKeyDown={e => e.key === "Enter" && handleSubmit()}
+            style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+        </div>
+
+        {error   && <div style={{ background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 10, padding: 12, color: "#b91c1c", fontSize: 13, marginBottom: 14 }}>{error}</div>}
+        {message && <div style={{ background: TL, border: `1px solid ${TM}`, borderRadius: 10, padding: 12, color: TD, fontSize: 13, marginBottom: 14 }}>{message}</div>}
+
+        <button className="btn-hover" onClick={handleSubmit} disabled={loading}
+          style={{ ...styles.bigBtn, width: "100%", justifyContent: "center", opacity: loading ? 0.6 : 1 }}>
+          {loading ? "..." : isLogin ? "Sign In" : "Create Account"}
+        </button>
+
+        <p style={{ textAlign: "center", marginTop: 16, fontSize: 13, color: GREY }}>
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          <span onClick={() => { setIsLogin(!isLogin); setError(""); setMessage(""); }}
+            style={{ color: T, fontWeight: 700, cursor: "pointer" }}>
+            {isLogin ? "Sign Up" : "Sign In"}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── PROFILE PAGE ──────────────────────────────────────────────────────────────
+function ProfilePage({ user, onLogin }) {
+  const [results, setResults]   = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [expanded, setExpanded] = useState(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("interview_results")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { setResults(data || []); setLoading(false); });
+  }, [user]);
+
+  if (!user) return (
+    <div style={{ maxWidth: 500, margin: "80px auto", padding: "0 5%", textAlign: "center" }}>
+      <div style={{ fontSize: 60, marginBottom: 16 }}>🔒</div>
+      <h2 style={{ ...styles.h2, marginBottom: 8 }}>Sign in to see your profile</h2>
+      <p style={{ color: GREY, marginBottom: 24 }}>Your interview history is saved to your account.</p>
+      <button className="btn-hover" style={styles.bigBtn} onClick={onLogin}>Sign In</button>
+    </div>
+  );
+
+  const avgScore = results.length ? Math.round(results.filter(r => r.score).reduce((a, b) => a + (b.score || 0), 0) / results.filter(r => r.score).length) : null;
+  const modeColors = { Friendly: "#22c55e", Normal: T, Tough: "#ef4444" };
+
+  return (
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
+      <div style={styles.chip}>My Profile</div>
+
+      {/* User info */}
+      <div style={{ ...styles.card, display: "flex", alignItems: "center", gap: 20, marginBottom: 32, flexWrap: "wrap" }}>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${T}, ${TD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 22, fontWeight: 700, flexShrink: 0 }}>
+          {user.email?.[0]?.toUpperCase()}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 17, color: DARK }}>{user.email}</div>
+          <div style={{ color: GREY, fontSize: 13, marginTop: 2 }}>Member since {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+        </div>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{results.length}</div>
+            <div style={{ fontSize: 12, color: GREY }}>Interviews</div>
+          </div>
+          {avgScore && (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{avgScore}<span style={{ fontSize: 14, color: GREY }}>/10</span></div>
+              <div style={{ fontSize: 12, color: GREY }}>Avg Score</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <h3 style={{ fontWeight: 700, fontSize: 18, color: DARK, marginBottom: 16 }}>Interview History</h3>
+
+      {loading && <div style={{ textAlign: "center", padding: 40, color: GREY }}>Loading...</div>}
+
+      {!loading && results.length === 0 && (
+        <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🎤</div>
+          <p style={{ color: GREY, fontSize: 15 }}>No interviews yet. Complete your first one to see results here!</p>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {results.map((r, i) => (
+          <div key={r.id} style={{ ...styles.card, cursor: "pointer", transition: "all .2s" }}
+            onClick={() => setExpanded(expanded === i ? null : i)}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, color: DARK, fontSize: 15 }}>{r.level} {r.role}</div>
+                <div style={{ color: GREY, fontSize: 13, marginTop: 2 }}>
+                  {new Date(r.created_at).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })} · {r.duration}min · {r.answers_count} answers
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ ...styles.tag, background: `${modeColors[r.mode] || T}22`, color: modeColors[r.mode] || T }}>{r.mode}</span>
+                {r.score && (
+                  <div style={{ fontWeight: 800, fontSize: 20, color: r.score >= 7 ? "#22c55e" : r.score >= 5 ? "#f59e0b" : "#ef4444" }}>
+                    {r.score}<span style={{ fontSize: 13, color: GREY, fontWeight: 400 }}>/10</span>
+                  </div>
+                )}
+                <span style={{ color: GREY, fontSize: 16 }}>{expanded === i ? "▲" : "▼"}</span>
+              </div>
+            </div>
+            {expanded === i && r.verdict && (
+              <div style={{ marginTop: 16, padding: "14px 16px", background: TL, borderRadius: 12, fontSize: 14, color: DARK, lineHeight: 1.6, borderLeft: `3px solid ${T}` }}>
+                <strong>Verdict:</strong> {r.verdict}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
   const [file, setFile]             = useState(null);
   const [targetRole, setTargetRole] = useState("QA Engineer");
   const [loading, setLoading]       = useState(false);
