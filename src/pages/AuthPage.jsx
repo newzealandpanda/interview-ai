@@ -42,7 +42,7 @@ export default function AuthPage({ user, onLogout, onSuccess }) {
       <div style={{ maxWidth: 420, margin: "60px auto", padding: "0 5%" }}>
         <div style={{ ...styles.card, padding: 36 }}>
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div style={{ fontSize: 40, marginBottom: 8 }}>🤖</div>
+            <img src="/friendly.png" alt="Interviewer" style={{ width: 72, height: 72, objectFit: "contain", marginBottom: 8 }} />
             <h2 style={{ ...styles.h2, fontSize: 22, margin: "0 0 6px" }}>{isLogin ? "Welcome back" : "Create account"}</h2>
             <p style={{ color: GREY, fontSize: 14, margin: 0 }}>{isLogin ? "Sign in to see your interview history" : "Save your results and track progress"}</p>
           </div>
