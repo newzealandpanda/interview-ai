@@ -108,7 +108,7 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
         {loading && <div style={{ textAlign: "center", padding: 40, color: GREY }}>Loading...</div>}
         {!loading && results.length === 0 && (
           <div style={{ ...styles.card, textAlign: "center", padding: 48, marginBottom: 32 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🎤</div>
+            <img src="/no-interviews-yet.png" alt="" style={{ width: 64, height: 64, objectFit: "contain", marginBottom: 12 }} />
             <p style={{ color: GREY, fontSize: 15 }}>No interviews yet. Complete your first one to see results here!</p>
           </div>
         )}
@@ -143,7 +143,9 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
 
         {/* Danger zone */}
         <div style={{ ...styles.card, border: "1.5px solid #fca5a5" }}>
-          <h4 style={{ fontWeight: 700, fontSize: 15, color: "#b91c1c", marginBottom: 8 }}>⚠️ Danger Zone</h4>
+          <h4 style={{ fontWeight: 700, fontSize: 15, color: "#b91c1c", marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+            <img src="/deletion-acc.png" alt="" style={{ width: 20, height: 20, objectFit: "contain" }} /> Danger Zone
+          </h4>
           <p style={{ color: GREY, fontSize: 13, marginBottom: 16 }}>Deleting your account will permanently remove all your interview history and profile data. This cannot be undone.</p>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", borderRadius: 30, border: "1.5px solid #fca5a5", background: "white", color: "#b91c1c", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>

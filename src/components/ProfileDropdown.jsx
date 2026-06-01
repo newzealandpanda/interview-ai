@@ -35,13 +35,13 @@ export default function ProfileDropdown({ user, onNav, onLogout, active }) {
             style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: DARK, transition: "background .15s" }}
             onMouseEnter={e => e.currentTarget.style.background = TL}
             onMouseLeave={e => e.currentTarget.style.background = "white"}>
-            👤 My Profile
+            <img src="/my-profile.png" alt="" style={{ width: 18, height: 18, objectFit: "contain" }} /> My Profile
           </div>
           <div onClick={() => { onLogout(); setOpen(false); }}
             style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: "#ef4444", borderTop: `1px solid ${TM}`, transition: "background .15s" }}
             onMouseEnter={e => e.currentTarget.style.background = "#fff0f0"}
             onMouseLeave={e => e.currentTarget.style.background = "white"}>
-            🚪 Sign Out
+            <img src="/sign-out.png" alt="" style={{ width: 18, height: 18, objectFit: "contain" }} /> Sign Out
           </div>
         </div>
       )}

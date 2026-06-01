@@ -119,7 +119,7 @@ export default function ResumePage({ onNav, user, onLogout }) {
         <div onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onClick={() => fileRef.current.click()}
           style={{ ...styles.card, border: `2px dashed ${dragging ? T : file ? T : TM}`, background: dragging ? TL : file ? TL : "white", cursor: "pointer", textAlign: "center", padding: "40px 24px", transition: "all .2s" }}>
           <input ref={fileRef} type="file" accept=".pdf,.docx" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); setResult(null); } }} />
-          <div style={{ fontSize: 48, marginBottom: 12 }}>{file ? "📄" : "⬆️"}</div>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>{file ? "📄" : <img src="/upload.png" alt="upload" style={{ width: 52, height: 52, objectFit: "contain" }} />}</div>
           {file ? (
             <><div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{file.name}</div><div style={{ color: GREY, fontSize: 13 }}>{(file.size / 1024).toFixed(0)} KB · Click to change</div></>
           ) : (
