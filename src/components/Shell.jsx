@@ -13,6 +13,7 @@ export default function Shell({ children, user, onLogout }) {
     ["/", "Home"],
     ["/practice", "Practice"],
     ["/resume", "Resume Check"],
+    ["/leaderboard", "Leaderboard"],
     ["/jobs", "Job Sites"],
   ];
 

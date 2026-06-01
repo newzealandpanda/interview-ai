@@ -1,14 +1,15 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "./supabase.js";
 import { useInterview } from "./hooks/useInterview.js";
-import HomePage      from "./pages/HomePage.jsx";
-import SelectPage    from "./pages/SelectPage.jsx";
-import InterviewPage from "./pages/InterviewPage.jsx";
-import FeedbackPage  from "./pages/FeedbackPage.jsx";
-import ResourcesPage from "./pages/ResourcesPage.jsx";
-import AuthPage      from "./pages/AuthPage.jsx";
-import ProfilePage   from "./pages/ProfilePage.jsx";
-import ResumePage    from "./pages/ResumePage.jsx";
+import HomePage         from "./pages/HomePage.jsx";
+import SelectPage       from "./pages/SelectPage.jsx";
+import InterviewPage    from "./pages/InterviewPage.jsx";
+import FeedbackPage     from "./pages/FeedbackPage.jsx";
+import ResourcesPage    from "./pages/ResourcesPage.jsx";
+import AuthPage         from "./pages/AuthPage.jsx";
+import ProfilePage      from "./pages/ProfilePage.jsx";
+import ResumePage       from "./pages/ResumePage.jsx";
+import LeaderboardPage  from "./pages/LeaderboardPage.jsx";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -86,6 +87,10 @@ function AppRoutes() {
 
       <Route path="/jobs" element={
         <ResourcesPage {...shellProps} />
+      } />
+
+      <Route path="/leaderboard" element={
+        <LeaderboardPage {...shellProps} />
       } />
     </Routes>
   );
