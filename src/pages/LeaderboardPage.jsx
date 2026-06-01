@@ -50,7 +50,10 @@ export default function LeaderboardPage({ user, onLogout }) {
     <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>🏆 Global Rankings</div>
-        <h2 style={{ ...styles.h2, marginBottom: 6 }}>Leaderboard</h2>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
+          <img src="/leaderboard.png" alt="Leaderboard" style={{ width: 52, height: 52, objectFit: "contain" }} />
+          <h2 style={{ ...styles.h2, margin: 0 }}>Leaderboard</h2>
+        </div>
         <p style={{ color: GREY, marginBottom: 32, fontSize: 15 }}>
           Top candidates ranked by best interview score. Updated in real time.
           {!user && <span> <span onClick={() => navigate("/login")} style={{ color: T, fontWeight: 700, cursor: "pointer" }}>Sign in</span> to appear on the leaderboard.</span>}
@@ -110,12 +113,13 @@ export default function LeaderboardPage({ user, onLogout }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* Header */}
-            <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 120px 100px 80px 80px", gap: 12, padding: "10px 20px", fontSize: 11, fontWeight: 700, color: GREY, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 120px 100px 80px 80px 80px", gap: 12, padding: "10px 20px", fontSize: 11, fontWeight: 700, color: GREY, textTransform: "uppercase", letterSpacing: 0.5 }}>
               <div>#</div>
               <div>Player</div>
               <div>Role</div>
               <div>Level / Mode</div>
               <div style={{ textAlign: "center" }}>Interviews</div>
+              <div style={{ textAlign: "center" }}>Avg Score</div>
               <div style={{ textAlign: "center" }}>Best Score</div>
             </div>
 
@@ -126,7 +130,7 @@ export default function LeaderboardPage({ user, onLogout }) {
 
               return (
                 <div key={`${entry.username}-${entry.role}-${i}`}
-                  style={{ ...styles.card, display: "grid", gridTemplateColumns: "40px 1fr 120px 100px 80px 80px", gap: 12, alignItems: "center", padding: "16px 20px", background: isMe ? TL : rank <= 3 ? "white" : "white", borderColor: isMe ? T : rank <= 3 ? TM : TM, animation: `fadeIn .3s ${i * 0.04}s both`, transition: "all .2s" }}
+                  style={{ ...styles.card, display: "grid", gridTemplateColumns: "40px 1fr 120px 100px 80px 80px 80px", gap: 12, alignItems: "center", padding: "16px 20px", background: isMe ? TL : "white", borderColor: isMe ? T : TM, animation: `fadeIn .3s ${i * 0.04}s both`, transition: "all .2s" }}
                   className="card-hover">
                   {/* Rank */}
                   <div style={{ fontWeight: 800, fontSize: rank <= 3 ? 20 : 15, color: rank <= 3 ? T : GREY, textAlign: "center" }}>
@@ -160,6 +164,12 @@ export default function LeaderboardPage({ user, onLogout }) {
                   {/* Interviews */}
                   <div style={{ textAlign: "center", fontWeight: 700, color: GREY, fontSize: 14 }}>
                     {entry.total_interviews}
+                  </div>
+
+                  {/* Avg score */}
+                  <div style={{ textAlign: "center" }}>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: GREY }}>{entry.avg_score}</span>
+                    <span style={{ fontSize: 11, color: GREY }}>/10</span>
                   </div>
 
                   {/* Best score */}
