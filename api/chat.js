@@ -1,3 +1,5 @@
+import { rateLimit } from "./rateLimit.js";
+
 const MIN_QUESTIONS = 5;
 const MAX_QUESTIONS = 12;
 
@@ -42,9 +44,10 @@ const ALLOWED_MODES = new Set(["friendly", "normal", "tough"]);
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  if (rateLimit(req, res)) return;
+
   const { messages, type, role, level, mode, asked, timeRemaining, duration } = req.body;
 
-  // Validate messages array
   if (!Array.isArray(messages) || messages.length === 0)
     return res.status(400).json({ error: "Invalid messages" });
 
@@ -62,7 +65,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Message too long" });
   }
 
-  // Validate type and mode against whitelists
   if (type && !ALLOWED_TYPES.has(type))
     return res.status(400).json({ error: "Invalid type" });
 
