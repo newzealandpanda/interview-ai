@@ -40,10 +40,12 @@ export default function AuthPage({ user, onLogout, onSuccess }) {
   }
 
   function validatePassword(pwd) {
-    if (pwd.length < 8) return "At least 8 characters";
-    if (!/[A-Za-z]/.test(pwd)) return "Include at least one letter";
-    if (!/[0-9]/.test(pwd)) return "Include at least one number";
-    if (!/[^A-Za-z0-9]/.test(pwd)) return "Include at least one special character";
+    if (
+      pwd.length < 8 ||
+      !/[A-Za-z]/.test(pwd) ||
+      !/[0-9]/.test(pwd) ||
+      !/[^A-Za-z0-9]/.test(pwd)
+    ) return "Password must be at least 8 characters and include a letter, a number, and a special character.";
     return null;
   }
 
