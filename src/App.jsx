@@ -22,7 +22,7 @@ function AppRoutes() {
     navigate("/");
   };
 
-  const shellProps = { user: iv.user, onLogout };
+  const shellProps = { user: iv.user, onLogout, avatarUrl: iv.avatarUrl };
 
   return (
     <Routes>
@@ -78,6 +78,7 @@ function AppRoutes() {
           {...shellProps}
           onLogin={() => navigate("/login")}
           onDeleted={() => { iv.setUser(null); navigate("/"); }}
+          onAvatarChange={(url) => iv.setAvatarUrl(url)}
         />
       } />
 

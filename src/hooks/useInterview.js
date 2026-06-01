@@ -18,6 +18,7 @@ export function useInterview({ navigate }) {
   const [micAllowed, setMicAllowed] = useState(null);
   const [user, setUser]             = useState(null);
   const [qIndex, setQIndex]         = useState(0);
+  const [avatarUrl, setAvatarUrl]   = useState(null);
 
   const timerRef        = useRef(null);
   const synthRef        = useRef(window.speechSynthesis);
@@ -32,10 +33,24 @@ export function useInterview({ navigate }) {
 
   // ── AUTH ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user || null));
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => setUser(session?.user || null));
+    supabase.auth.getSession().then(({ data }) => {
+      const u = data.session?.user || null;
+      setUser(u);
+      if (u) loadAvatar(u.id);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      const u = session?.user || null;
+      setUser(u);
+      if (u) loadAvatar(u.id);
+      else setAvatarUrl(null);
+    });
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  async function loadAvatar(userId) {
+    const { data } = await supabase.from("profiles").select("avatar_url").eq("id", userId).single();
+    setAvatarUrl(data?.avatar_url || null);
+  }
 
   // ── TIMER ─────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -244,7 +259,7 @@ CONTEXT:
   const timerColor = timeLeft < 120 ? "#ff6b6b" : timeLeft < 300 ? "#f59e0b" : "#45A29E";
 
   return {
-    user, setUser,
+    user, setUser, avatarUrl, setAvatarUrl,
     role, setRole, level, setLevel, mode, setMode, duration, setDuration,
     qIndex, timeLeft, running, transcript, listening, speaking, statusMsg,
     feedbackRaw, loadingFB, micAllowed, fb, pct, timerColor,

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { T, TD, TL, TM, DARK, GREY, BG, CSS } from "../constants.js";
 import ProfileDropdown from "./ProfileDropdown.jsx";
 
-export default function Shell({ children, user, onLogout }) {
+export default function Shell({ children, user, onLogout, avatarUrl }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,7 +33,7 @@ export default function Shell({ children, user, onLogout }) {
             </button>
           ))}
           {user ? (
-            <ProfileDropdown user={user} onLogout={onLogout} active={active} />
+            <ProfileDropdown user={user} onLogout={onLogout} active={active} avatarUrl={avatarUrl} />
           ) : (
             <button onClick={() => navigate("/login")} style={{ background: T, color: "white", border: "none", borderRadius: 30, padding: "8px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginLeft: 8 }}>
               Sign In

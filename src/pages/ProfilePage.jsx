@@ -1,32 +1,79 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { T, TD, TL, TM, DARK, GREY, styles } from "../constants.js";
 import Shell from "../components/Shell.jsx";
+import Avatar from "../components/Avatar.jsx";
 
-export default function ProfilePage({ user, onLogout, onLogin, onDeleted }) {
+export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvatarChange }) {
   const navigate = useNavigate();
   const [results, setResults]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [expanded, setExpanded]       = useState(null);
   const [username, setUsername]       = useState("");
+  const [avatarUrl, setAvatarUrl]     = useState(null);
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarMsg, setAvatarMsg]     = useState("");
   const [editingName, setEditingName] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [saveMsg, setSaveMsg]         = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting]       = useState(false);
+  const avatarRef = useRef();
 
   useEffect(() => {
     if (!user) return;
     Promise.all([
       supabase.from("interview_results").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("profiles").select("username").eq("id", user.id).single()
+      supabase.from("profiles").select("username, avatar_url").eq("id", user.id).single()
     ]).then(([{ data: res }, { data: profile }]) => {
       setResults(res || []);
       setUsername(profile?.username || "");
+      setAvatarUrl(profile?.avatar_url || null);
       setLoading(false);
     });
   }, [user]);
+
+  async function uploadAvatar(file) {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { setAvatarMsg("File too large. Max 2MB."); return; }
+    if (!["image/jpeg","image/png","image/webp"].includes(file.type)) { setAvatarMsg("Only JPG, PNG or WebP allowed."); return; }
+    setAvatarLoading(true); setAvatarMsg("");
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/avatar.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (upErr) { setAvatarMsg(upErr.message); setAvatarLoading(false); return; }
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const url = data.publicUrl + "?t=" + Date.now(); // cache bust
+    await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id);
+    setAvatarUrl(url);
+    onAvatarChange?.(url);
+    setAvatarMsg("Avatar updated!");
+    setTimeout(() => setAvatarMsg(""), 2000);
+    setAvatarLoading(false);
+  }
+
+  async function removeAvatar() {
+    setAvatarLoading(true);
+    await supabase.storage.from("avatars").remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.png`, `${user.id}/avatar.webp`]);
+    await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    setAvatarUrl(null);
+    onAvatarChange?.(null);
+    setAvatarMsg("Avatar removed.");
+    setTimeout(() => setAvatarMsg(""), 2000);
+    setAvatarLoading(false);
+  }
+
+  if (!user) return (
+    <Shell user={user} onLogout={onLogout}>
+      <div style={{ maxWidth: 500, margin: "80px auto", padding: "0 5%", textAlign: "center" }}>
+        <div style={{ fontSize: 60, marginBottom: 16 }}>🔒</div>
+        <h2 style={{ ...styles.h2, marginBottom: 8 }}>Sign in to see your profile</h2>
+        <p style={{ color: GREY, marginBottom: 24 }}>Your interview history is saved to your account.</p>
+        <button className="btn-hover" style={styles.bigBtn} onClick={() => navigate("/login")}>Sign In</button>
+      </div>
+    </Shell>
+  );
 
   async function saveUsername() {
     if (newUsername.trim().length < 3) { setSaveMsg("Min 3 characters."); return; }
@@ -44,18 +91,6 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted }) {
   }
 
   const modeColors = { Friendly: "#22c55e", Normal: T, Tough: "#ef4444" };
-
-  if (!user) return (
-    <Shell user={user} onLogout={onLogout}>
-      <div style={{ maxWidth: 500, margin: "80px auto", padding: "0 5%", textAlign: "center" }}>
-        <div style={{ fontSize: 60, marginBottom: 16 }}>🔒</div>
-        <h2 style={{ ...styles.h2, marginBottom: 8 }}>Sign in to see your profile</h2>
-        <p style={{ color: GREY, marginBottom: 24 }}>Your interview history is saved to your account.</p>
-        <button className="btn-hover" style={styles.bigBtn} onClick={() => navigate("/login")}>Sign In</button>
-      </div>
-    </Shell>
-  );
-
   const avgScore = results.filter(r => r.score).length
     ? Math.round(results.filter(r => r.score).reduce((a, b) => a + (b.score || 0), 0) / results.filter(r => r.score).length)
     : null;
@@ -68,9 +103,17 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted }) {
 
         <div style={{ ...styles.card, marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", marginBottom: editingName ? 20 : 0 }}>
-            <div style={{ width: 60, height: 60, borderRadius: "50%", background: `linear-gradient(135deg, ${T}, ${TD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 24, fontWeight: 800, flexShrink: 0 }}>
-              {displayName?.[0]?.toUpperCase()}
+            {/* Avatar with upload */}
+            <div style={{ position: "relative", flexShrink: 0 }}>
+              <input ref={avatarRef} type="file" accept=".jpg,.jpeg,.png,.webp" style={{ display: "none" }} onChange={e => uploadAvatar(e.target.files[0])} />
+              <Avatar url={avatarUrl} name={displayName} size={68} />
+              <button onClick={() => avatarRef.current.click()} disabled={avatarLoading}
+                style={{ position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: "50%", background: T, border: "2px solid white", color: "white", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                title="Change avatar">
+                {avatarLoading ? "..." : "✎"}
+              </button>
             </div>
+
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 <div style={{ fontWeight: 700, fontSize: 18, color: DARK }}>{displayName}</div>
@@ -78,6 +121,17 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted }) {
               </div>
               <div style={{ color: GREY, fontSize: 13, marginTop: 2 }}>{user.email}</div>
               <div style={{ color: GREY, fontSize: 12, marginTop: 2 }}>Member since {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => avatarRef.current.click()} disabled={avatarLoading}
+                  style={{ fontSize: 12, color: T, fontWeight: 600, cursor: "pointer", background: TL, padding: "2px 10px", borderRadius: 20, border: "none", fontFamily: "inherit" }}>
+                  {avatarLoading ? "Uploading..." : "Change avatar"}
+                </button>
+                {avatarUrl && <button onClick={removeAvatar} disabled={avatarLoading}
+                  style={{ fontSize: 12, color: "#b91c1c", fontWeight: 600, cursor: "pointer", background: "#fff0f0", padding: "2px 10px", borderRadius: 20, border: "none", fontFamily: "inherit" }}>
+                  Remove
+                </button>}
+                {avatarMsg && <span style={{ fontSize: 12, color: TD }}>{avatarMsg}</span>}
+              </div>
             </div>
             <div style={{ display: "flex", gap: 24 }}>
               <div style={{ textAlign: "center" }}>

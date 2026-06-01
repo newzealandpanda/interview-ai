@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { T, TD, TL, TM, DARK, GREY, styles, ROLES, LEVELS, MODES } from "../constants.js";
 import Shell from "../components/Shell.jsx";
+import Avatar from "../components/Avatar.jsx";
 
 const MEDAL = { 1: "🥇", 2: "🥈", 3: "🥉" };
 const modeColors = { Friendly: "#22c55e", Normal: T, Tough: "#ef4444" };
@@ -29,12 +30,24 @@ export default function LeaderboardPage({ user, onLogout }) {
 
   async function fetchLeaderboard() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: lb, error } = await supabase
       .from("leaderboard")
       .select("*")
       .order("best_score", { ascending: false })
       .limit(50);
-    if (!error) setEntries(data || []);
+    if (error) { setLoading(false); return; }
+
+    // Fetch avatars for all usernames
+    const usernames = [...new Set((lb || []).map(e => e.username))];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .in("username", usernames);
+
+    const avatarMap = {};
+    (profiles || []).forEach(p => { avatarMap[p.username] = p.avatar_url; });
+
+    setEntries((lb || []).map(e => ({ ...e, avatar_url: avatarMap[e.username] || null })));
     setLoading(false);
   }
 
@@ -139,9 +152,7 @@ export default function LeaderboardPage({ user, onLogout }) {
 
                   {/* Player */}
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: `linear-gradient(135deg, ${T}, ${TD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>
-                      {entry.username?.[0]?.toUpperCase()}
-                    </div>
+                    <Avatar url={entry.avatar_url} name={entry.username} size={36} />
                     <div>
                       <div style={{ fontWeight: 700, color: DARK, fontSize: 14 }}>
                         {entry.username} {isMe && <span style={{ fontSize: 11, color: T, background: TL, padding: "2px 8px", borderRadius: 20 }}>You</span>}
