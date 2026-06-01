@@ -5,13 +5,13 @@ import { T, TD, TL, TM, DARK, GREY, styles } from "../constants.js";
 import Shell from "../components/Shell.jsx";
 import Avatar from "../components/Avatar.jsx";
 
-export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvatarChange, avatarUrl: avatarUrlProp }) {
+export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvatarChange }) {
   const navigate = useNavigate();
   const [results, setResults]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [expanded, setExpanded]       = useState(null);
   const [username, setUsername]       = useState("");
-  const [avatarUrl, setAvatarUrl]     = useState(avatarUrlProp || null);
+  const [avatarUrl, setAvatarUrl]     = useState(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const [avatarMsg, setAvatarMsg]     = useState("");
   const [editingName, setEditingName] = useState(false);
@@ -20,10 +20,6 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting]       = useState(false);
   const avatarRef = useRef();
-
-  useEffect(() => {
-    if (avatarUrlProp !== undefined) setAvatarUrl(avatarUrlProp || null);
-  }, [avatarUrlProp]);
 
   useEffect(() => {
     if (!user) return;
@@ -69,7 +65,7 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
   }
 
   if (!user) return (
-    <Shell user={user} onLogout={onLogout} avatarUrl={avatarUrl}>
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 500, margin: "80px auto", padding: "0 5%", textAlign: "center" }}>
         <div style={{ fontSize: 60, marginBottom: 16 }}>🔒</div>
         <h2 style={{ ...styles.h2, marginBottom: 8 }}>Sign in to see your profile</h2>
@@ -101,7 +97,7 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
   const displayName = username || user.email?.split("@")[0];
 
   return (
-    <Shell user={user} onLogout={onLogout} avatarUrl={avatarUrl}>
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>My Profile</div>
 

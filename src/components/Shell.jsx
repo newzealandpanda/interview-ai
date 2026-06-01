@@ -1,10 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { T, TD, TL, TM, DARK, GREY, BG, CSS } from "../constants.js";
 import ProfileDropdown from "./ProfileDropdown.jsx";
+import { supabase } from "../supabase.js";
 
-export default function Shell({ children, user, onLogout, avatarUrl }) {
+export default function Shell({ children, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(null);
+
+  useEffect(() => {
+    if (!user?.id) { setAvatarUrl(null); return; }
+
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url || null));
+
+    const sub = supabase.channel("profile-avatar")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload) => setAvatarUrl(payload.new.avatar_url || null))
+      .subscribe();
+
+    return () => supabase.removeChannel(sub);
+  }, [user?.id]);
   const navigate = useNavigate();
   const location = useLocation();
   const active = location.pathname;
