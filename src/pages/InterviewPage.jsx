@@ -9,7 +9,7 @@ export default function InterviewPage({ role, level, mode, duration, timeLeft, t
       {/* Top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 60, borderBottom: "1px solid #1e3535" }}>
         <div style={{ fontWeight: 800, fontSize: 16, color: T }}>
-          InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
+          Elohire <span style={{ color: TM, fontSize: 11, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
             - <img src={`/${mode?.id}.png`} alt={mode?.label} style={{ width: 18, height: 18, objectFit: "contain", verticalAlign: "middle" }} /> {mode?.label} · {level?.label} {role?.label} · {duration}min
           </span>
         </div>
@@ -29,7 +29,7 @@ export default function InterviewPage({ role, level, mode, duration, timeLeft, t
         {transcript.map((e, i) => (
           <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", justifyContent: e.role === "user" ? "flex-end" : "flex-start", animation: "fadeIn .4s ease" }}>
             {e.role === "ai" && (
-              <div style={{ width: 34, height: 34, borderRadius: "50%", background: `linear-gradient(135deg,${T},${TD})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>
+              <img src="/elohire-robot.png" alt="AI" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
             )}
             <div style={{ background: e.role === "ai" ? "#1a3535" : "#0a2828", border: `1px solid ${e.role === "ai" ? "#2a4545" : T + "44"}`, borderRadius: e.role === "ai" ? "0 12px 12px 12px" : "12px 0 12px 12px", padding: "11px 15px", fontSize: 14, lineHeight: 1.6, maxWidth: 520, color: e.role === "ai" ? TM : "white" }}>
               {e.text}

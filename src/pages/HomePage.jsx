@@ -42,7 +42,7 @@ export default function HomePage({ user, onLogout }) {
               </div>
               <div style={{ padding: 16 }}>
                 <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: TL, border: `1.5px solid ${T}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>🤖</div>
+                  <img src="/elohire-robot.png" alt="AI" style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", border: `1.5px solid ${T}`, flexShrink: 0 }} />
                   <div style={{ background: TL, borderRadius: "0 12px 12px 12px", padding: "9px 12px", fontSize: 13, color: DARK, lineHeight: 1.5 }}>How do you handle flaky tests in Playwright?</div>
                 </div>
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 14 }}>

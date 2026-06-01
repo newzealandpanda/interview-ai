@@ -38,7 +38,7 @@ export default function Shell({ children, user, onLogout }) {
       <style>{CSS}</style>
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 64, background: "white", borderBottom: `1.5px solid ${TM}`, position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(69,162,158,0.07)" }}>
         <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer", letterSpacing: -0.3 }} onClick={() => { navigate("/"); setMenuOpen(false); }}>
-          Interview<span style={{ color: T }}>AI</span> <span style={{ color: GREY, fontSize: 11, fontWeight: 500 }}>for IT</span>
+          Elo<span style={{ color: T }}>hire</span>
         </div>
 
         {/* Desktop nav */}
@@ -78,7 +78,7 @@ export default function Shell({ children, user, onLogout }) {
       {children}
 
       <footer style={{ background: DARK, color: TM, textAlign: "center", padding: "32px 5%", fontSize: 12 }}>
-        <p style={{ margin: 0, fontWeight: 600 }}>InterviewAI for IT - Powered by Claude AI - Open Source on GitHub</p>
+        <p style={{ margin: 0, fontWeight: 600 }}>Elohire - Powered by Claude AI - Open Source on GitHub</p>
         <p style={{ margin: "6px 0 0", opacity: 0.5 }}>Free forever · No account required · Voice-first</p>
       </footer>
     </div>

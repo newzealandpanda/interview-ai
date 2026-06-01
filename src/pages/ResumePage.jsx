@@ -146,7 +146,7 @@ export default function ResumePage({ user, onLogout }) {
 
         {(loading || extracting) && (
           <div style={{ ...styles.card, textAlign: "center", padding: 48, marginTop: 32 }}>
-            <div style={{ fontSize: 40, marginBottom: 12, animation: "float 2s ease-in-out infinite" }}>🤖</div>
+            <img src="/elohire-robot.png" alt="AI" style={{ width: 64, height: 64, objectFit: "contain", marginBottom: 12, animation: "float 2s ease-in-out infinite" }} />
             <p style={{ color: TD, fontWeight: 700, fontSize: 15 }}>{extracting ? "Reading your file..." : "Analyzing your resume..."}</p>
             <Waveform active={true} color={T} />
           </div>
