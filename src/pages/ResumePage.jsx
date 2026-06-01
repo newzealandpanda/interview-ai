@@ -4,7 +4,7 @@ import Shell from "../components/Shell.jsx";
 import FBCard from "../components/FBCard.jsx";
 import Waveform from "../components/Waveform.jsx";
 
-export default function ResumePage({ onNav, user, onLogout }) {
+export default function ResumePage({ user, onLogout }) {
   const [file, setFile]             = useState(null);
   const [targetRole, setTargetRole] = useState("QA Engineer");
   const [loading, setLoading]       = useState(false);
@@ -77,15 +77,15 @@ export default function ResumePage({ onNav, user, onLogout }) {
     setError(""); setResult(null);
     const isPDF = file.type === "application/pdf";
     const isDOCX = file.name.endsWith(".docx");
-    if (isPDF && !window.pdfjsLib) { setError("PDF reader is loading, please wait a moment."); return; }
-    if (isDOCX && !window.mammoth) { setError("DOCX reader is loading, please wait a moment."); return; }
+    if (isPDF && !window.pdfjsLib) { setError("PDF reader is loading, please wait."); return; }
+    if (isDOCX && !window.mammoth) { setError("DOCX reader is loading, please wait."); return; }
     setExtracting(true);
     let resumeText = "";
     try {
       if (isPDF) resumeText = await extractTextFromPDF(file);
       else if (isDOCX) resumeText = await extractTextFromDOCX(file);
       else { setExtracting(false); setError("Please upload a PDF or DOCX file."); return; }
-    } catch { setExtracting(false); setError("Could not read file. Make sure it's a valid PDF or DOCX."); return; }
+    } catch { setExtracting(false); setError("Could not read file."); return; }
     setExtracting(false);
     if (!resumeText.trim()) { setError("Could not extract text. Make sure your file is not a scanned image."); return; }
     setLoading(true);
@@ -109,25 +109,24 @@ export default function ResumePage({ onNav, user, onLogout }) {
   const roles = ["QA Engineer","Frontend Developer","Backend Developer","DevOps / SRE","Product Manager","Data Engineer / ML","Full Stack Developer","iOS Developer","Android Developer"];
 
   return (
-    <Shell active="resume" onNav={onNav} user={user} onLogout={onLogout}>
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>AI Resume Review</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Check Your Resume</h2>
-        <p style={{ color: GREY, marginBottom: 36, fontSize: 15 }}>Upload your PDF or DOCX resume and get instant AI feedback tailored to your target role.</p>
+        <p style={{ color: GREY, marginBottom: 36, fontSize: 15 }}>Upload your PDF or DOCX resume and get instant AI feedback.</p>
 
-        {/* Upload */}
         <div onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onClick={() => fileRef.current.click()}
           style={{ ...styles.card, border: `2px dashed ${dragging ? T : file ? T : TM}`, background: dragging ? TL : file ? TL : "white", cursor: "pointer", textAlign: "center", padding: "40px 24px", transition: "all .2s" }}>
           <input ref={fileRef} type="file" accept=".pdf,.docx" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); setResult(null); } }} />
-          <div style={{ fontSize: 48, marginBottom: 12 }}>{file ? "📄" : <img src="/upload.png" alt="upload" style={{ width: 52, height: 52, objectFit: "contain" }} />}</div>
-          {file ? (
-            <><div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{file.name}</div><div style={{ color: GREY, fontSize: 13 }}>{(file.size / 1024).toFixed(0)} KB · Click to change</div></>
-          ) : (
-            <><div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>Drop your resume here or click to upload</div><div style={{ color: GREY, fontSize: 13 }}>PDF or DOCX · Max 5MB</div></>
-          )}
+          <div style={{ marginBottom: 12 }}>
+            {file ? <span style={{ fontSize: 48 }}>📄</span> : <img src="/upload.png" alt="upload" style={{ width: 52, height: 52, objectFit: "contain" }} />}
+          </div>
+          {file
+            ? <><div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{file.name}</div><div style={{ color: GREY, fontSize: 13 }}>{(file.size / 1024).toFixed(0)} KB · Click to change</div></>
+            : <><div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>Drop your resume here or click to upload</div><div style={{ color: GREY, fontSize: 13 }}>PDF or DOCX · Max 5MB</div></>
+          }
         </div>
 
-        {/* Target role */}
         <div style={{ marginTop: 20 }}>
           <label style={{ fontWeight: 700, fontSize: 14, color: DARK, display: "block", marginBottom: 8 }}>Target Role</label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

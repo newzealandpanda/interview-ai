@@ -1,37 +1,33 @@
+import { useNavigate } from "react-router-dom";
 import { T, TD, TL, TM, DARK, GREY, BG, styles } from "../constants.js";
 import Waveform from "../components/Waveform.jsx";
 import CtaBanner from "../components/CtaBanner.jsx";
 import Shell from "../components/Shell.jsx";
 
-export default function HomePage({ onNav, user, onLogout }) {
+export default function HomePage({ user, onLogout }) {
+  const navigate = useNavigate();
   return (
-    <Shell active="home" onNav={onNav} user={user} onLogout={onLogout}>
-      {/* HERO */}
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ background: `linear-gradient(160deg, ${TL} 0%, white 60%)`, padding: "60px 5% 0", position: "relative", overflow: "hidden" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: 40, flexWrap: "wrap" }}>
-          {/* Left */}
           <div style={{ flex: "1 1 340px", minWidth: 280, animation: "fadeIn .6s ease" }} className="mobile-center">
             <div style={styles.chip}>✦ AI Voice Interview Prep</div>
             <h1 style={{ ...styles.h1, fontSize: "clamp(2rem,4.5vw,3.2rem)" }}>
-              Practice interviews<br />
-              <span style={{ color: T }}>by voice,</span><br />
-              get hired faster
+              Practice interviews<br /><span style={{ color: T }}>by voice,</span><br />get hired faster
             </h1>
             <p style={{ ...styles.sub, margin: "0 0 32px", textAlign: "left" }} className="mobile-center">
               Real-time AI mock interviews for QA, Frontend, Backend, DevOps, PM and Data roles. Speak your answers and get instant AI feedback.
             </p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <button className="btn-hover" style={styles.bigBtn} onClick={() => onNav("select")}>
+              <button className="btn-hover" style={styles.bigBtn} onClick={() => navigate("/practice")}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 Start Voice Interview
               </button>
-              <button className="btn-hover" style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => onNav("resources")}>
+              <button className="btn-hover" style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => navigate("/jobs")}>
                 View Job Sites →
               </button>
             </div>
           </div>
-
-          {/* Right - Robot + chat preview */}
           <div style={{ flex: "1 1 320px", minWidth: 280, display: "flex", justifyContent: "center", alignItems: "flex-end", animation: "fadeIn .8s .2s both" }}>
             <div style={{ animation: "float 4s ease-in-out infinite", flexShrink: 0, marginRight: -16, zIndex: 2 }}>
               <img src="/robot-sitting.png" alt="AI Interviewer" style={{ width: 180, height: "auto", display: "block" }} />
@@ -60,7 +56,6 @@ export default function HomePage({ onNav, user, onLogout }) {
         </div>
       </div>
 
-      {/* FEATURES */}
       <div style={{ padding: "64px 5%", background: "white" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <h2 style={{ ...styles.h2, textAlign: "center", marginBottom: 8 }}>Everything in one place</h2>
@@ -83,8 +78,7 @@ export default function HomePage({ onNav, user, onLogout }) {
           </div>
         </div>
       </div>
-
-      <CtaBanner onStart={() => onNav("select")} />
+      <CtaBanner onStart={() => navigate("/practice")} />
     </Shell>
   );
 }

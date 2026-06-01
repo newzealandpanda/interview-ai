@@ -2,31 +2,30 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../supabase.js";
 import { MODES, DEFAULT_DURATION, parseFeedback } from "../constants.js";
 
-export function useInterview() {
-  const [role, setRole]           = useState(null);
-  const [level, setLevel]         = useState(null);
-  const [mode, setMode]           = useState(null);
-  const [duration, setDuration]   = useState(20);
-  const [page, setPage]           = useState("home");
-  const [qIndex, setQIndex]       = useState(0);
-  const [timeLeft, setTimeLeft]   = useState(DEFAULT_DURATION);
-  const [running, setRunning]     = useState(false);
+export function useInterview({ navigate }) {
+  const [role, setRole]         = useState(null);
+  const [level, setLevel]       = useState(null);
+  const [mode, setMode]         = useState(null);
+  const [duration, setDuration] = useState(20);
+  const [timeLeft, setTimeLeft] = useState(DEFAULT_DURATION);
+  const [running, setRunning]   = useState(false);
   const [transcript, setTranscript] = useState([]);
-  const [listening, setListening] = useState(false);
-  const [speaking, setSpeaking]   = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
+  const [listening, setListening]   = useState(false);
+  const [speaking, setSpeaking]     = useState(false);
+  const [statusMsg, setStatusMsg]   = useState("");
   const [feedbackRaw, setFeedbackRaw] = useState("");
-  const [loadingFB, setLoadingFB] = useState(false);
+  const [loadingFB, setLoadingFB]   = useState(false);
   const [micAllowed, setMicAllowed] = useState(null);
-  const [user, setUser]           = useState(null);
+  const [user, setUser]             = useState(null);
+  const [qIndex, setQIndex]         = useState(0);
 
-  const timerRef       = useRef(null);
-  const synthRef       = useRef(window.speechSynthesis);
-  const recognRef      = useRef(null);
-  const sessionRef     = useRef([]);
-  const endedRef       = useRef(false);
+  const timerRef        = useRef(null);
+  const synthRef        = useRef(window.speechSynthesis);
+  const recognRef       = useRef(null);
+  const sessionRef      = useRef([]);
+  const endedRef        = useRef(false);
   const conversationRef = useRef([]);
-  const questionsAsked = useRef(0);
+  const questionsAsked  = useRef(0);
 
   const MIN_QUESTIONS = 5;
   const MAX_QUESTIONS = 12;
@@ -81,42 +80,26 @@ export function useInterview() {
     if (!SR) { setStatusMsg("Speech recognition not supported in this browser."); return; }
     const rec = new SR();
     recognRef.current = rec;
-    rec.lang = "en-US";
-    rec.interimResults = true;
-    rec.maxAlternatives = 1;
-    rec.continuous = true;
+    rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = true;
 
     let finalText = "";
     let interimText = "";
     let silenceTimer = null;
-    const SILENCE_MS = 2800; // slightly longer to capture trailing words
+    const SILENCE_MS = 2800;
 
-    setListening(true);
-    setStatusMsg("🎙 Listening...");
+    setListening(true); setStatusMsg("🎙 Listening...");
 
     rec.onresult = (e) => {
-      finalText = "";
-      interimText = "";
+      finalText = ""; interimText = "";
       for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) {
-          finalText += e.results[i][0].transcript + " ";
-        } else {
-          interimText += e.results[i][0].transcript;
-        }
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+        else interimText += e.results[i][0].transcript;
       }
-      const combined = (finalText + interimText).trim();
-      setStatusMsg("🎙 " + combined);
-
-      // Reset silence timer on every speech event
+      setStatusMsg("🎙 " + (finalText + interimText).trim());
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
-        // Use both final and interim to avoid losing words
         const result = (finalText + interimText).trim();
-        if (result.length > 2) {
-          rec.stop();
-          // Don't call onResult here - wait for onend to fire
-          // so we get any remaining final results
-        }
+        if (result.length > 2) rec.stop();
       }, SILENCE_MS);
     };
 
@@ -126,22 +109,15 @@ export function useInterview() {
         setStatusMsg("🎙 No speech detected, listening again...");
         rec.stop();
         setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 500);
-      } else {
-        setListening(false);
-        setStatusMsg("Mic error: " + e.error);
-      }
+      } else { setListening(false); setStatusMsg("Mic error: " + e.error); }
     };
 
     rec.onend = () => {
       clearTimeout(silenceTimer);
-      setListening(false);
-      setStatusMsg("");
-      // Combine final + interim to get everything that was said
+      setListening(false); setStatusMsg("");
       const result = (finalText + interimText).trim();
-      if (result.length > 2 && !endedRef.current) {
-        onResult(result);
-      } else if (result.length <= 2 && !endedRef.current) {
-        // Nothing captured - restart listening
+      if (result.length > 2 && !endedRef.current) onResult(result);
+      else if (result.length <= 2 && !endedRef.current) {
         setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 300);
       }
     };
@@ -211,7 +187,8 @@ CONTEXT:
     catch { setMicAllowed(false); return; }
     endedRef.current = false; sessionRef.current = []; conversationRef.current = [];
     questionsAsked.current = 0; setTranscript([]); setQIndex(0);
-    setTimeLeft(duration * 60); setRunning(true); setPage("interview");
+    setTimeLeft(duration * 60); setRunning(true);
+    navigate("/interview");
     conversationRef.current = [{ role: "user", content: `[START] Mock interview for ${level?.label} ${role?.label}. Mode: ${mode?.label || "Normal"}. Begin with an opener.` }];
     const greetings = {
       friendly: `Hi there! I'm Jamie. We have ${duration} minutes for a ${level?.label} ${role?.label} interview. Take your time and speak naturally. Ready?`,
@@ -230,7 +207,8 @@ CONTEXT:
 
   // ── FEEDBACK ──────────────────────────────────────────────────────────────
   async function generateFeedback() {
-    setPage("feedback"); setLoadingFB(true);
+    navigate("/feedback");
+    setLoadingFB(true);
     const answers = sessionRef.current.filter(e => e.role === "user").map(e => e.text);
     const conv = sessionRef.current.map(e => `${e.role === "ai" ? "Interviewer" : "Candidate"}: ${e.text}`).join("\n");
     if (answers.length === 0) {
@@ -266,12 +244,10 @@ CONTEXT:
   const timerColor = timeLeft < 120 ? "#ff6b6b" : timeLeft < 300 ? "#f59e0b" : "#45A29E";
 
   return {
-    // state
-    page, setPage, user, setUser,
+    user, setUser,
     role, setRole, level, setLevel, mode, setMode, duration, setDuration,
     qIndex, timeLeft, running, transcript, listening, speaking, statusMsg,
     feedbackRaw, loadingFB, micAllowed, fb, pct, timerColor,
-    // actions
     startSession, endSession, speak,
   };
 }

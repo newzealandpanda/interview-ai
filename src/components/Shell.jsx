@@ -1,29 +1,40 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { T, TD, TL, TM, DARK, GREY, BG, CSS } from "../constants.js";
 import ProfileDropdown from "./ProfileDropdown.jsx";
 
-export default function Shell({ children, active, onNav, user, onLogout }) {
+export default function Shell({ children, user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const active = location.pathname;
+
+  const nav = [
+    ["/", "Home"],
+    ["/practice", "Practice"],
+    ["/resume", "Resume Check"],
+    ["/jobs", "Job Sites"],
+  ];
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", background: BG, minHeight: "100vh", color: DARK }}>
       <style>{CSS}</style>
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 64, background: "white", borderBottom: `1.5px solid ${TM}`, position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(69,162,158,0.07)" }}>
-        <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer", letterSpacing: -0.3 }} onClick={() => { onNav("home"); setMenuOpen(false); }}>
+        <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer", letterSpacing: -0.3 }} onClick={() => { navigate("/"); setMenuOpen(false); }}>
           Interview<span style={{ color: T }}>AI</span> <span style={{ color: GREY, fontSize: 11, fontWeight: 500 }}>for IT</span>
         </div>
 
         {/* Desktop nav */}
         <div className="hide-mobile" style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"]].map(([id, label]) => (
-            <button key={id} onClick={() => onNav(id)} style={{ background: active === id ? TL : "transparent", color: active === id ? TD : GREY, border: active === id ? `1.5px solid ${TM}` : "1.5px solid transparent", borderRadius: 30, padding: "8px 18px", fontWeight: active === id ? 700 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
+          {nav.map(([path, label]) => (
+            <button key={path} onClick={() => navigate(path)} style={{ background: active === path ? TL : "transparent", color: active === path ? TD : GREY, border: active === path ? `1.5px solid ${TM}` : "1.5px solid transparent", borderRadius: 30, padding: "8px 18px", fontWeight: active === path ? 700 : 500, fontSize: 14, cursor: "pointer", fontFamily: "inherit", transition: "all .15s" }}>
               {label}
             </button>
           ))}
           {user ? (
-            <ProfileDropdown user={user} onNav={onNav} onLogout={onLogout} active={active} />
+            <ProfileDropdown user={user} onLogout={onLogout} active={active} />
           ) : (
-            <button onClick={() => onNav("login")} style={{ background: T, color: "white", border: "none", borderRadius: 30, padding: "8px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginLeft: 8 }}>
+            <button onClick={() => navigate("/login")} style={{ background: T, color: "white", border: "none", borderRadius: 30, padding: "8px 20px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", marginLeft: 8 }}>
               Sign In
             </button>
           )}
@@ -34,8 +45,8 @@ export default function Shell({ children, active, onNav, user, onLogout }) {
           {menuOpen ? "✕" : "☰"}
         </button>
         <div style={{ display: menuOpen ? "block" : "none", position: "absolute", top: 64, left: 0, right: 0, background: "white", borderBottom: `1.5px solid ${TM}`, padding: "12px 5%", zIndex: 99 }}>
-          {[["home","Home"],["select","Practice"],["resume","Resume Check"],["resources","Job Sites"],["profile", user ? "👤 Profile" : "Sign In"]].map(([id, label]) => (
-            <div key={id} onClick={() => { onNav(id === "profile" && !user ? "login" : id); setMenuOpen(false); }} style={{ padding: "14px 0", fontWeight: active === id ? 700 : 500, color: active === id ? T : DARK, borderBottom: `1px solid ${TM}`, cursor: "pointer", fontSize: 16 }}>
+          {[...nav, ["/profile", user ? "👤 Profile" : "Sign In"]].map(([path, label]) => (
+            <div key={path} onClick={() => { navigate(path === "/profile" && !user ? "/login" : path); setMenuOpen(false); }} style={{ padding: "14px 0", fontWeight: active === path ? 700 : 500, color: active === path ? T : DARK, borderBottom: `1px solid ${TM}`, cursor: "pointer", fontSize: 16 }}>
               {label}
             </div>
           ))}

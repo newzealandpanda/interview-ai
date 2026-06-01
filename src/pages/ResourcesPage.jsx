@@ -1,10 +1,12 @@
+import { useNavigate } from "react-router-dom";
 import { T, DARK, GREY, styles, JOB_SITES } from "../constants.js";
 import Shell from "../components/Shell.jsx";
 import CtaBanner from "../components/CtaBanner.jsx";
 
-export default function ResourcesPage({ onNav, user, onLogout }) {
+export default function ResourcesPage({ user, onLogout }) {
+  const navigate = useNavigate();
   return (
-    <Shell active="resources" onNav={onNav} user={user} onLogout={onLogout}>
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Job Search</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>17 Best Job Sites for IT Professionals</h2>
@@ -22,7 +24,7 @@ export default function ResourcesPage({ onNav, user, onLogout }) {
           ))}
         </div>
       </div>
-      <CtaBanner onStart={() => onNav("select")} />
+      <CtaBanner onStart={() => navigate("/practice")} />
     </Shell>
   );
 }

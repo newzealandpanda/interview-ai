@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { T, TD, TL, TM, DARK, GREY } from "../constants.js";
 
-export default function ProfileDropdown({ user, onNav, onLogout, active }) {
+export default function ProfileDropdown({ user, onLogout, active }) {
   const [open, setOpen] = useState(false);
   const ref = useRef();
+  const navigate = useNavigate();
 
   useEffect(() => {
     function handleClick(e) {
@@ -15,10 +17,9 @@ export default function ProfileDropdown({ user, onNav, onLogout, active }) {
 
   return (
     <div ref={ref} style={{ position: "relative", marginLeft: 8 }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{ background: open || active === "profile" ? TL : T, color: open || active === "profile" ? TD : "white", border: `1.5px solid ${open || active === "profile" ? TM : T}`, borderRadius: 30, padding: "8px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, transition: "all .15s" }}>
-        <span style={{ width: 22, height: 22, borderRadius: "50%", background: open || active === "profile" ? T : "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ background: open || active === "/profile" ? TL : T, color: open || active === "/profile" ? TD : "white", border: `1.5px solid ${open || active === "/profile" ? TM : T}`, borderRadius: 30, padding: "8px 18px", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, transition: "all .15s" }}>
+        <span style={{ width: 22, height: 22, borderRadius: "50%", background: open || active === "/profile" ? T : "rgba(255,255,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>
           {user.email?.[0]?.toUpperCase()}
         </span>
         Profile
@@ -31,7 +32,7 @@ export default function ProfileDropdown({ user, onNav, onLogout, active }) {
             <div style={{ fontSize: 12, color: GREY, marginBottom: 2 }}>Signed in as</div>
             <div style={{ fontWeight: 700, fontSize: 13, color: DARK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.email}</div>
           </div>
-          <div onClick={() => { onNav("profile"); setOpen(false); }}
+          <div onClick={() => { navigate("/profile"); setOpen(false); }}
             style={{ padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: DARK, transition: "background .15s" }}
             onMouseEnter={e => e.currentTarget.style.background = TL}
             onMouseLeave={e => e.currentTarget.style.background = "white"}>

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { T, TD, TL, TM, DARK, GREY, styles } from "../constants.js";
 import Shell from "../components/Shell.jsx";
-import FBCard from "../components/FBCard.jsx";
 
-export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted }) {
+export default function ProfilePage({ user, onLogout, onLogin, onDeleted }) {
+  const navigate = useNavigate();
   const [results, setResults]         = useState([]);
   const [loading, setLoading]         = useState(true);
   const [expanded, setExpanded]       = useState(null);
@@ -45,12 +46,12 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
   const modeColors = { Friendly: "#22c55e", Normal: T, Tough: "#ef4444" };
 
   if (!user) return (
-    <Shell active="profile" onNav={onNav} user={user} onLogout={onLogout}>
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 500, margin: "80px auto", padding: "0 5%", textAlign: "center" }}>
         <div style={{ fontSize: 60, marginBottom: 16 }}>🔒</div>
         <h2 style={{ ...styles.h2, marginBottom: 8 }}>Sign in to see your profile</h2>
         <p style={{ color: GREY, marginBottom: 24 }}>Your interview history is saved to your account.</p>
-        <button className="btn-hover" style={styles.bigBtn} onClick={onLogin}>Sign In</button>
+        <button className="btn-hover" style={styles.bigBtn} onClick={() => navigate("/login")}>Sign In</button>
       </div>
     </Shell>
   );
@@ -61,11 +62,10 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
   const displayName = username || user.email?.split("@")[0];
 
   return (
-    <Shell active="profile" onNav={onNav} user={user} onLogout={onLogout}>
+    <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>My Profile</div>
 
-        {/* User info card */}
         <div style={{ ...styles.card, marginBottom: 32 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", marginBottom: editingName ? 20 : 0 }}>
             <div style={{ width: 60, height: 60, borderRadius: "50%", background: `linear-gradient(135deg, ${T}, ${TD})`, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 24, fontWeight: 800, flexShrink: 0 }}>
@@ -94,8 +94,7 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
           </div>
           {editingName && (
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", paddingTop: 16, borderTop: `1px solid ${TM}` }}>
-              <input value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="new username"
-                style={{ flex: 1, minWidth: 160, padding: "9px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
+              <input value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="new username" style={{ flex: 1, minWidth: 160, padding: "9px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
               <button className="btn-hover" style={{ ...styles.bigBtn, padding: "9px 20px", fontSize: 13 }} onClick={saveUsername}>Save</button>
               <button onClick={() => setEditingName(false)} style={{ padding: "9px 16px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: GREY, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
               {saveMsg && <span style={{ fontSize: 13, color: TD }}>{saveMsg}</span>}
@@ -103,7 +102,6 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
           )}
         </div>
 
-        {/* History */}
         <h3 style={{ fontWeight: 700, fontSize: 18, color: DARK, marginBottom: 16 }}>Interview History</h3>
         {loading && <div style={{ textAlign: "center", padding: 40, color: GREY }}>Loading...</div>}
         {!loading && results.length === 0 && (
@@ -124,11 +122,7 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ ...styles.tag, background: `${modeColors[r.mode] || T}22`, color: modeColors[r.mode] || T }}>{r.mode}</span>
-                  {r.score && (
-                    <div style={{ fontWeight: 800, fontSize: 20, color: r.score >= 7 ? "#22c55e" : r.score >= 5 ? "#f59e0b" : "#ef4444" }}>
-                      {r.score}<span style={{ fontSize: 13, color: GREY, fontWeight: 400 }}>/10</span>
-                    </div>
-                  )}
+                  {r.score && <div style={{ fontWeight: 800, fontSize: 20, color: r.score >= 7 ? "#22c55e" : r.score >= 5 ? "#f59e0b" : "#ef4444" }}>{r.score}<span style={{ fontSize: 13, color: GREY, fontWeight: 400 }}>/10</span></div>}
                   <span style={{ color: GREY, fontSize: 16 }}>{expanded === i ? "▲" : "▼"}</span>
                 </div>
               </div>
@@ -141,26 +135,21 @@ export default function ProfilePage({ onNav, user, onLogout, onLogin, onDeleted 
           ))}
         </div>
 
-        {/* Danger zone */}
         <div style={{ ...styles.card, border: "1.5px solid #fca5a5" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 8 }}>
             <img src="/deletion-acc.png" alt="" style={{ width: 60, height: 60, objectFit: "contain", flexShrink: 0 }} />
             <h4 style={{ fontWeight: 700, fontSize: 15, color: "#b91c1c", margin: 0 }}>Danger Zone</h4>
           </div>
-          <p style={{ color: GREY, fontSize: 13, marginBottom: 16 }}>Deleting your account will permanently remove all your interview history and profile data. This cannot be undone.</p>
+          <p style={{ color: GREY, fontSize: 13, marginBottom: 16 }}>Deleting your account will permanently remove all your data. This cannot be undone.</p>
           {!confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", borderRadius: 30, border: "1.5px solid #fca5a5", background: "white", color: "#b91c1c", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-              Delete Account
-            </button>
+            <button onClick={() => setConfirmDelete(true)} style={{ padding: "10px 20px", borderRadius: 30, border: "1.5px solid #fca5a5", background: "white", color: "#b91c1c", fontWeight: 600, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Delete Account</button>
           ) : (
             <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ fontSize: 13, color: "#b91c1c", fontWeight: 600 }}>Are you sure? This cannot be undone.</span>
               <button onClick={deleteAccount} disabled={deleting} style={{ padding: "10px 20px", borderRadius: 30, border: "none", background: "#ef4444", color: "white", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
                 {deleting ? "Deleting..." : "Yes, Delete Everything"}
               </button>
-              <button onClick={() => setConfirmDelete(false)} style={{ padding: "10px 16px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: GREY, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                Cancel
-              </button>
+              <button onClick={() => setConfirmDelete(false)} style={{ padding: "10px 16px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: GREY, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>Cancel</button>
             </div>
           )}
         </div>
