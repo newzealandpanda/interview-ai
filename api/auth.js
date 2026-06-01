@@ -1,36 +1,4 @@
-import { createHmac } from "crypto";
-
-function base64UrlDecode(str) {
-  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, "=");
-  return Buffer.from(padded, "base64");
-}
-
-export function verifyJWT(token, secret) {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-
-    const [headerB64, payloadB64, signatureB64] = parts;
-    const signingInput = `${headerB64}.${payloadB64}`;
-
-    const expectedSig = createHmac("sha256", secret)
-      .update(signingInput)
-      .digest("base64url");
-
-    if (expectedSig !== signatureB64) return null;
-
-    const payload = JSON.parse(base64UrlDecode(payloadB64).toString("utf8"));
-
-    if (payload.exp && Date.now() / 1000 > payload.exp) return null;
-
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-export function requireAuth(req, res) {
+export async function requireAuth(req, res) {
   const authHeader = req.headers["authorization"];
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Unauthorized" });
@@ -38,18 +6,27 @@ export function requireAuth(req, res) {
   }
 
   const token = authHeader.slice(7);
-  const secret = process.env.SUPABASE_JWT_SECRET;
 
-  if (!secret) {
-    res.status(500).json({ error: "Server misconfigured" });
+  try {
+    const response = await fetch(
+      `${process.env.VITE_SUPABASE_URL}/auth/v1/user`,
+      {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "apikey": process.env.VITE_SUPABASE_ANON_KEY,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      res.status(401).json({ error: "Invalid or expired token" });
+      return null;
+    }
+
+    const user = await response.json();
+    return user;
+  } catch {
+    res.status(401).json({ error: "Auth check failed" });
     return null;
   }
-
-  const payload = verifyJWT(token, secret);
-  if (!payload) {
-    res.status(401).json({ error: "Invalid or expired token" });
-    return null;
-  }
-
-  return payload;
 }
