@@ -9,8 +9,10 @@ export default function FeedbackPage({ onNav, user, onLogout, role, level, mode,
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "52px 5%" }}>
         <div style={styles.chip}>Session Complete</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Your Interview Feedback</h2>
-        <p style={{ color: GREY, marginBottom: 32 }}>
-          Role: <strong style={{ color: DARK }}>{level?.label} {role?.label}</strong> · Mode: <strong style={{ color: mode?.color || T }}>{mode?.emoji} {mode?.label}</strong> · {transcript.filter(e => e.role === "user").length} answers recorded
+        <p style={{ color: GREY, marginBottom: 32, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          Role: <strong style={{ color: DARK }}>{level?.label} {role?.label}</strong>
+          · Mode: <img src={`/${mode?.id}.png`} alt={mode?.label} style={{ width: 22, height: 22, objectFit: "contain", verticalAlign: "middle" }} /> <strong style={{ color: mode?.color || T }}>{mode?.label}</strong>
+          · {transcript.filter(e => e.role === "user").length} answers recorded
         </p>
 
         {loadingFB ? (
@@ -41,10 +43,10 @@ export default function FeedbackPage({ onNav, user, onLogout, role, level, mode,
                 </div>
               </div>
             )}
-            {fb.verdict    && <FBCard icon="🏁" title="Verdict"           text={fb.verdict}    color={T}       />}
-            {fb.strengths  && <FBCard icon="💪" title="Strengths"         text={fb.strengths}  color="#22c55e" />}
-            {fb.weaknesses && <FBCard icon="🔧" title="Areas to Improve"  text={fb.weaknesses} color="#f59e0b" />}
-            {fb.tips       && <FBCard icon="💡" title="Tips for Next Time" text={fb.tips}       color={TD}      />}
+            {fb.verdict    && <FBCard iconImg="/verdict.png"           title="Verdict"           text={fb.verdict}    color={T}       />}
+            {fb.strengths  && <FBCard iconImg="/strengths.png"          title="Strengths"         text={fb.strengths}  color="#22c55e" />}
+            {fb.weaknesses && <FBCard iconImg="/improve-areas.png"      title="Areas to Improve"  text={fb.weaknesses} color="#f59e0b" />}
+            {fb.tips       && <FBCard iconImg="/typs-for-next-time.png" title="Tips for Next Time" text={fb.tips}      color={TD}      />}
             {!fb.score && feedbackRaw && (
               <div style={{ ...styles.card, whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.7, color: GREY }}>{feedbackRaw}</div>
             )}
