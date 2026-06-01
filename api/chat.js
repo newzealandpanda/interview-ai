@@ -35,16 +35,39 @@ function buildFeedbackSystem(mode) {
   return `You are a senior tech hiring manager. Interview mode: ${label}. Calibrate tone accordingly.`;
 }
 
+const ALLOWED_ROLES = new Set(["user", "assistant"]);
+const ALLOWED_TYPES = new Set(["interview", "feedback"]);
+const ALLOWED_MODES = new Set(["friendly", "normal", "tough"]);
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const { messages, type, role, level, mode, asked, timeRemaining, duration } = req.body;
 
+  // Validate messages array
   if (!Array.isArray(messages) || messages.length === 0)
     return res.status(400).json({ error: "Invalid messages" });
 
   if (messages.length > 30)
     return res.status(400).json({ error: "Too many messages" });
+
+  for (const msg of messages) {
+    if (!msg || typeof msg !== "object")
+      return res.status(400).json({ error: "Invalid message format" });
+    if (!ALLOWED_ROLES.has(msg.role))
+      return res.status(400).json({ error: "Invalid message role" });
+    if (typeof msg.content !== "string")
+      return res.status(400).json({ error: "Invalid message content" });
+    if (msg.content.length > 4000)
+      return res.status(400).json({ error: "Message too long" });
+  }
+
+  // Validate type and mode against whitelists
+  if (type && !ALLOWED_TYPES.has(type))
+    return res.status(400).json({ error: "Invalid type" });
+
+  if (mode && !ALLOWED_MODES.has(mode))
+    return res.status(400).json({ error: "Invalid mode" });
 
   const system =
     type === "feedback"
