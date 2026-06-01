@@ -37,8 +37,8 @@ export default function Shell({ children, user, onLogout }) {
     <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", background: BG, minHeight: "100vh", color: DARK }}>
       <style>{CSS}</style>
       <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 64, background: "white", borderBottom: `1.5px solid ${TM}`, position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(69,162,158,0.07)" }}>
-        <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer", letterSpacing: -0.3 }} onClick={() => { navigate("/"); setMenuOpen(false); }}>
-          Elo<span style={{ color: T }}>hire</span><img src="/friendly.png" alt="" style={{ width: 24, height: 24, objectFit: "contain", marginLeft: 6, verticalAlign: "middle" }} />
+        <div style={{ fontWeight: 800, fontSize: 18, color: TD, cursor: "pointer", letterSpacing: -0.3, display: "flex", alignItems: "center" }} onClick={() => { navigate("/"); setMenuOpen(false); }}>
+          Elo<span style={{ color: T }}>hire</span><img src="/friendly.png" alt="" style={{ width: 36, height: 36, objectFit: "contain", marginLeft: 6, display: "block" }} />
         </div>
 
         {/* Desktop nav */}
