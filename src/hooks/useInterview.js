@@ -141,11 +141,11 @@ export function useInterview({ navigate }) {
   }, []);
 
   // ── GROQ ──────────────────────────────────────────────────────────────────
-  async function askGroq(messages, system) {
+  async function askGroq(messages, params = {}) {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages, system }),
+      body: JSON.stringify({ messages, ...params }),
     });
     const data = await res.json();
     return data.text || "";
@@ -158,14 +158,16 @@ export function useInterview({ navigate }) {
     const timeRemaining = timeLeft;
     setStatusMsg("AI is thinking..."); setSpeaking(true);
     const currentMode = mode || MODES[1];
-    const system = currentMode.system(role?.label || "IT professional", level?.label || "Mid-level") + `
-CONTEXT:
-- Questions asked: ${asked}, Time remaining: ${Math.floor(timeRemaining / 60)} min
-- Total duration: ${duration} min, Min: ${MIN_QUESTIONS}, Max: ${MAX_QUESTIONS}
-- If asked < ${MIN_QUESTIONS} - always continue
-- If time < 3 min OR asked >= ${MAX_QUESTIONS} - output only: END_INTERVIEW`;
     try {
-      const response = await askGroq(conversationRef.current, system);
+      const response = await askGroq(conversationRef.current, {
+        type: "interview",
+        role: role?.label || "IT professional",
+        level: level?.label || "Mid-level",
+        mode: currentMode.id,
+        asked,
+        timeRemaining,
+        duration,
+      });
       setSpeaking(false); setStatusMsg("");
       if (!response || endedRef.current) return;
       if (response.trim().toUpperCase().includes("END_INTERVIEW") || asked >= MAX_QUESTIONS) {
@@ -231,9 +233,11 @@ CONTEXT:
       setLoadingFB(false); return;
     }
     try {
-      const system = `You are a senior tech hiring manager. Interview mode: ${mode?.label || "Normal"}. Calibrate tone accordingly.`;
       const prompt = `Analyze this mock interview for a ${level?.label} ${role?.label} role.\n\nTRANSCRIPT:\n${conv}\n\nRespond in this EXACT format:\nOVERALL_SCORE: [1-10]\nSTRENGTHS:\n• [point 1]\n• [point 2]\n• [point 3]\nWEAKNESSES:\n• [point 1]\n• [point 2]\nTIPS:\n• [tip 1]\n• [tip 2]\n• [tip 3]\nVERDICT: [2-3 sentences]`;
-      const text = await askGroq([{ role: "user", content: prompt }], system);
+      const text = await askGroq([{ role: "user", content: prompt }], {
+        type: "feedback",
+        mode: mode?.id,
+      });
       const finalText = text || "OVERALL_SCORE: N/A\nVERDICT: Could not generate feedback.";
       setFeedbackRaw(finalText);
       if (user) {
