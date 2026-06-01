@@ -1,4 +1,5 @@
 import { rateLimit } from "./rateLimit.js";
+import { requireAuth } from "./auth.js";
 
 const MIN_QUESTIONS = 5;
 const MAX_QUESTIONS = 12;
@@ -45,6 +46,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   if (rateLimit(req, res)) return;
+
+  if (!requireAuth(req, res)) return;
 
   const { messages, type, role, level, mode, asked, timeRemaining, duration } = req.body;
 

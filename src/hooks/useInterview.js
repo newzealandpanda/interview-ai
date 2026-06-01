@@ -142,9 +142,11 @@ export function useInterview({ navigate }) {
 
   // ── GROQ ──────────────────────────────────────────────────────────────────
   async function askGroq(messages, params = {}) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token || "";
     const res = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body: JSON.stringify({ messages, ...params }),
     });
     const data = await res.json();
