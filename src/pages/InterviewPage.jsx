@@ -9,7 +9,9 @@ export default function InterviewPage({ role, level, mode, duration, timeLeft, t
       {/* Top bar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 5%", height: 60, borderBottom: "1px solid #1e3535" }}>
         <div style={{ fontWeight: 800, fontSize: 16, color: T }}>
-          InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500 }}>- {mode?.emoji} {mode?.label} · {level?.label} {role?.label} · {duration}min</span>
+          InterviewAI <span style={{ color: TM, fontSize: 11, fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            - <img src={`/${mode?.id}.png`} alt={mode?.label} style={{ width: 18, height: 18, objectFit: "contain", verticalAlign: "middle" }} /> {mode?.label} · {level?.label} {role?.label} · {duration}min
+          </span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ fontWeight: 800, fontSize: 20, color: timerColor, fontVariantNumeric: "tabular-nums", transition: "color 0.5s" }}>{fmt(timeLeft)}</div>
