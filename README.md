@@ -1,16 +1,55 @@
-# React + Vite
+# AI Voice Interview
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Voice-powered mock interview app for IT professionals. Practice technical interviews with an AI interviewer, get instant feedback, and track your progress.
 
-Currently, two official plugins are available:
+**Live:** [aiwebinterview.vercel.app](https://aiwebinterview.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Voice interviews via speech-to-text and text-to-speech
+- Role, level, and mode selection (behavioral / technical / mixed)
+- AI-generated questions and real-time feedback
+- Resume upload and analysis
+- Leaderboard and interview history
+- User profiles with authentication
 
-## Expanding the ESLint configuration
+## Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Frontend** - React, Vite, react-router-dom
+
+**Backend** - Vercel Serverless Functions (`/api/chat.js`, `/api/resume.js`)
+
+**AI** - Groq API (llama-3.3-70b)
+
+**Database / Auth / Storage** - Supabase (PostgreSQL, Auth, Storage)
+
+**Deploy** - Vercel
+
+## Database
+
+| Table | Description |
+|---|---|
+| `profiles` | User profile data (username, avatar) |
+| `interview_results` | Session results (role, level, score, feedback) |
+| `leaderboard` | View aggregating top results |
+
+## Getting Started
+
+```bash
+git clone https://github.com/newzealandpanda/interview-ai
+cd interview-ai
+npm install
+npm run dev
+```
+
+Create a `.env` file based on `.env.example` and add your Supabase and Groq credentials.
+
+## Environment Variables
+
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+GROQ_API_KEY=
+```
