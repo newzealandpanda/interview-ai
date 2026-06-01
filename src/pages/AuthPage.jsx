@@ -18,10 +18,10 @@ export default function AuthPage({ user, onLogout, onSuccess }) {
   async function handleSubmit() {
     setLoading(true); setError(""); setMessage("");
 
-    if (!isLogin && password !== confirmPassword) {
-      setError("Passwords do not match.");
-      setLoading(false);
-      return;
+    if (!isLogin) {
+      const pwdError = validatePassword(password);
+      if (pwdError) { setError(pwdError); setLoading(false); return; }
+      if (password !== confirmPassword) { setError("Passwords do not match."); setLoading(false); return; }
     }
 
     if (isLogin) {
@@ -37,6 +37,14 @@ export default function AuthPage({ user, onLogout, onSuccess }) {
       setMessage("Check your email to confirm your account, then sign in.");
     }
     setLoading(false);
+  }
+
+  function validatePassword(pwd) {
+    if (pwd.length < 8) return "At least 8 characters";
+    if (!/[A-Za-z]/.test(pwd)) return "Include at least one letter";
+    if (!/[0-9]/.test(pwd)) return "Include at least one number";
+    if (!/[^A-Za-z0-9]/.test(pwd)) return "Include at least one special character";
+    return null;
   }
 
   async function handleGoogle() {
@@ -82,7 +90,7 @@ export default function AuthPage({ user, onLogout, onSuccess }) {
 
           <div style={{ marginBottom: !isLogin ? 14 : 20 }}>
             <label style={{ fontWeight: 600, fontSize: 13, color: DARK, display: "block", marginBottom: 6 }}>Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8+ characters" onKeyDown={e => e.key === "Enter" && isLogin && handleSubmit()} style={input} />
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8+ chars, letter, number, symbol" onKeyDown={e => e.key === "Enter" && isLogin && handleSubmit()} style={input} />
           </div>
 
           {!isLogin && (
