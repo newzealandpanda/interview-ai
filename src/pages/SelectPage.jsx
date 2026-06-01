@@ -4,6 +4,15 @@ import Shell from "../components/Shell.jsx";
 
 export default function SelectPage({ user, onLogout, role, setRole, level, setLevel, mode, setMode, duration, setDuration, micAllowed, onStart }) {
   const navigate = useNavigate();
+
+  function handleStart() {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    onStart();
+  }
+
   return (
     <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
@@ -102,7 +111,7 @@ export default function SelectPage({ user, onLogout, role, setRole, level, setLe
         )}
 
         <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button className="btn-hover" style={{ ...styles.bigBtn, opacity: (role && level && mode) ? 1 : 0.45 }} disabled={!role || !level || !mode} onClick={onStart}>
+          <button className="btn-hover" style={{ ...styles.bigBtn, opacity: (role && level && mode) ? 1 : 0.45 }} disabled={!role || !level || !mode} onClick={handleStart}>
             🎤 Start Interview
           </button>
           <button style={{ ...styles.bigBtn, background: "white", color: TD, border: `1.5px solid ${TM}`, boxShadow: "none" }} onClick={() => navigate("/")}>Back</button>
