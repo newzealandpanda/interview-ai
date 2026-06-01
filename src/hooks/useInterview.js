@@ -81,31 +81,71 @@ export function useInterview() {
     if (!SR) { setStatusMsg("Speech recognition not supported in this browser."); return; }
     const rec = new SR();
     recognRef.current = rec;
-    rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = true;
-    let finalText = ""; let silenceTimer = null; const SILENCE_MS = 2200;
-    setListening(true); setStatusMsg("🎙 Listening...");
+    rec.lang = "en-US";
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    rec.continuous = true;
+
+    let finalText = "";
+    let interimText = "";
+    let silenceTimer = null;
+    const SILENCE_MS = 2800; // slightly longer to capture trailing words
+
+    setListening(true);
+    setStatusMsg("🎙 Listening...");
+
     rec.onresult = (e) => {
-      let interim = ""; finalText = "";
+      finalText = "";
+      interimText = "";
       for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
-        else interim += e.results[i][0].transcript;
+        if (e.results[i].isFinal) {
+          finalText += e.results[i][0].transcript + " ";
+        } else {
+          interimText += e.results[i][0].transcript;
+        }
       }
-      setStatusMsg("🎙 " + (finalText + interim).trim());
+      const combined = (finalText + interimText).trim();
+      setStatusMsg("🎙 " + combined);
+
+      // Reset silence timer on every speech event
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
-        const result = finalText.trim() || (finalText + interim).trim();
-        if (result.length > 2) { rec.stop(); setListening(false); setStatusMsg(""); onResult(result); }
+        // Use both final and interim to avoid losing words
+        const result = (finalText + interimText).trim();
+        if (result.length > 2) {
+          rec.stop();
+          // Don't call onResult here - wait for onend to fire
+          // so we get any remaining final results
+        }
       }, SILENCE_MS);
     };
+
     rec.onerror = (e) => {
       clearTimeout(silenceTimer);
       if (e.error === "no-speech") {
         setStatusMsg("🎙 No speech detected, listening again...");
         rec.stop();
         setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 500);
-      } else { setListening(false); setStatusMsg("Mic error: " + e.error); }
+      } else {
+        setListening(false);
+        setStatusMsg("Mic error: " + e.error);
+      }
     };
-    rec.onend = () => { clearTimeout(silenceTimer); if (finalText.trim().length === 0 && !endedRef.current) setListening(false); };
+
+    rec.onend = () => {
+      clearTimeout(silenceTimer);
+      setListening(false);
+      setStatusMsg("");
+      // Combine final + interim to get everything that was said
+      const result = (finalText + interimText).trim();
+      if (result.length > 2 && !endedRef.current) {
+        onResult(result);
+      } else if (result.length <= 2 && !endedRef.current) {
+        // Nothing captured - restart listening
+        setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 300);
+      }
+    };
+
     rec.start();
   }, []);
 
