@@ -55,7 +55,7 @@ VERDICT: [2-3 actionable sentences on what to do next]`
     const feedbackText = data.choices?.[0]?.message?.content || "";
     res.status(200).json({ feedback: feedbackText });
 
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } catch {
+    res.status(500).json({ error: "Resume analysis failed" });
   }
 }
