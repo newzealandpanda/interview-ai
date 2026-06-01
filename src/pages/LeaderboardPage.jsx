@@ -48,13 +48,13 @@ export default function LeaderboardPage({ user, onLogout }) {
 
   return (
     <Shell user={user} onLogout={onLogout}>
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "52px 5%" }}>
-        <div style={styles.chip}>🏆 Global Rankings</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
-          <img src="/leaderboard.png" alt="Leaderboard" style={{ width: 52, height: 52, objectFit: "contain" }} />
-          <h2 style={{ ...styles.h2, margin: 0 }}>Leaderboard</h2>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "52px 5%", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: TL, borderRadius: 30, padding: "5px 16px", marginBottom: 14 }}>
+          <img src="/leaderboard.png" alt="" style={{ width: 20, height: 20, objectFit: "contain" }} />
+          <span style={{ fontSize: 11.5, fontWeight: 700, color: TD, letterSpacing: 0.8, textTransform: "uppercase" }}>Global Rankings</span>
         </div>
-        <p style={{ color: GREY, marginBottom: 32, fontSize: 15 }}>
+        <h2 style={{ ...styles.h2, marginBottom: 6, textAlign: "center" }}>Leaderboard</h2>
+        <p style={{ color: GREY, marginBottom: 32, fontSize: 15, textAlign: "center" }}>
           Top candidates ranked by best interview score. Updated in real time.
           {!user && <span> <span onClick={() => navigate("/login")} style={{ color: T, fontWeight: 700, cursor: "pointer" }}>Sign in</span> to appear on the leaderboard.</span>}
         </p>
