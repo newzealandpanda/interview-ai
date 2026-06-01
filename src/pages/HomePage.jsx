@@ -75,7 +75,7 @@ export default function HomePage({ onNav, user, onLogout }) {
               ["/free-and-opensource.png", "Free & Open Source",  "No login, no paywall. Deploy on GitHub and Vercel in minutes."],
             ].map(([img, title, desc], i) => (
               <div key={i} className="card-hover" style={{ ...styles.card, transition: "all .2s", cursor: "default" }}>
-                <img src={img} alt={title} style={{ width: 52, height: 52, objectFit: "contain", marginBottom: 14 }} />
+                <img src={img} alt={title} style={{ width: 104, height: 104, objectFit: "contain", marginBottom: 14 }} />
                 <h4 style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: DARK }}>{title}</h4>
                 <p style={{ color: GREY, fontSize: 13.5, margin: 0, lineHeight: 1.6 }}>{desc}</p>
               </div>
