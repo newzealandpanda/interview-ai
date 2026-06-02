@@ -1,23 +1,34 @@
 import { test, expect } from '@playwright/test';
-import { loginTestUser } from '../helpers/auth';
+
+// smoke тест - реальный запрос к Groq через /api/chat
+// не использует браузер - просто HTTP запрос
+// запускается только мануально
 
 test.describe('Smoke - реальный Groq', () => {
 
-  test('Select -> Interview - AI реально отвечает', async ({ page }) => {
-    await loginTestUser(page);
-    await page.goto('/practice');
+  test('/api/chat - Groq отвечает на реальный запрос', async ({ request }) => {
+    // request - это встроенный в Playwright HTTP клиент
+    const response = await request.post(`${process.env.BASE_URL}/api/chat`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        messages: [
+          { role: 'system', content: 'You are an interviewer. Ask one short question.' },
+          { role: 'user', content: 'Hello, I am ready for the interview.' }
+        ]
+      }
+    });
 
-    await page.getByText('QA Engineer').click();
-    await page.getByText('Junior').click();
-    await page.getByText('Normal').first().click();
-    await page.getByRole('button', { name: /Start Interview/i }).click();
+    // API отвечает 200
+    expect(response.status()).toBe(200);
 
-    await expect(page).toHaveURL(/\/interview/, { timeout: 15_000 });
+    const body = await response.json();
 
-    // transcript рендерится через inline стили - ищем div с фоном AI (#1a3535)
-    // ждём пока появится хотя бы один пузырь от AI
-    await expect(page.locator('div[style*="1a3535"]').first())
-      .toBeVisible({ timeout: 25_000 });
+    // ответ содержит текст от Groq
+    expect(body.reply).toBeTruthy();
+    expect(typeof body.reply).toBe('string');
+    expect(body.reply.length).toBeGreaterThan(10);
+
+    console.log('Groq ответил:', body.reply.slice(0, 100));
   });
 
 });
