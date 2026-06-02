@@ -9,11 +9,11 @@ export async function requireAuth(req, res) {
 
   try {
     const response = await fetch(
-      `${process.env.VITE_SUPABASE_URL}/auth/v1/user`,
+      `${process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL}/auth/v1/user`,
       {
         headers: {
           "Authorization": `Bearer ${token}`,
-          "apikey": process.env.VITE_SUPABASE_ANON_KEY,
+          "apikey": process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY,
         },
       }
     );
