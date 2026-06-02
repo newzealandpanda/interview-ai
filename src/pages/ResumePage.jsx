@@ -149,7 +149,7 @@ export default function ResumePage({ user, onLogout }) {
 
         {(loading || extracting) && (
           <div style={{ ...styles.card, textAlign: "center", padding: 48, marginTop: 32 }}>
-            <img src="/elohire-robot.png" alt="AI" style={{ width: 64, height: 64, objectFit: "contain", marginBottom: 12, animation: "float 2s ease-in-out infinite" }} />
+            <img src="/friendly.png" alt="AI" style={{ width: 64, height: 64, objectFit: "contain", marginBottom: 12, animation: "float 2s ease-in-out infinite" }} />
             <p style={{ color: TD, fontWeight: 700, fontSize: 15 }}>{extracting ? "Reading your file..." : "Analyzing your resume..."}</p>
             <Waveform active={true} color={T} />
           </div>
@@ -170,10 +170,10 @@ export default function ResumePage({ user, onLogout }) {
             </div>
             {fb.summary   && <FBCard iconImg="/verdict.png" title="Summary"          text={fb.summary}   color={T}       />}
             {fb.strengths && <FBCard iconImg="/strengths.png" title="Strengths"        text={fb.strengths} color="#22c55e" />}
-            {fb.improve   && <FBCard iconImg="/improve-areas.png" title="Improvements"     text={fb.improve}   color="#f59e0b" />}
-            {fb.ats_tips  && <FBCard iconImg="/typs-for-next-time.png" title="ATS Optimization" text={fb.ats_tips}  color={TD}      />}
-            {fb.missing   && <FBCard iconImg="/improve-areas.png" title="Missing Sections" text={fb.missing}   color="#ef4444" />}
-            {fb.verdict   && <FBCard iconImg="/verdict.png" title="Next Steps"       text={fb.verdict}   color={T}       />}
+            {fb.improve   && <FBCard iconImg="/impromevents.png" title="Improvements"     text={fb.improve}   color="#f59e0b" />}
+            {fb.ats_tips  && <FBCard iconImg="/ats-optimization.png" title="ATS Optimization" text={fb.ats_tips}  color={TD}      />}
+            {fb.missing   && <FBCard iconImg="/missing-section.png" title="Missing Sections" text={fb.missing}   color="#ef4444" />}
+            {fb.verdict   && <FBCard iconImg="/next-steps.png" title="Next Steps"       text={fb.verdict}   color={T}       />}
             <button className="btn-hover" style={{ ...styles.bigBtn, alignSelf: "flex-start" }} onClick={() => { setFile(null); setResult(null); }}>
               Check Another Resume
             </button>
