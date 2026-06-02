@@ -35,7 +35,7 @@ RESUME TEXT:
 ${text.slice(0, 6000)}
 
 Respond in this EXACT format:
-OVERALL_SCORE: [1-10]
+OVERALL_SCORE: [1-100]
 SUMMARY: [2-3 sentence overall impression]
 STRENGTHS:
 - [strength 1]
@@ -45,7 +45,7 @@ IMPROVEMENTS:
 - [specific improvement 1]
 - [specific improvement 2]
 - [specific improvement 3]
-ATS_SCORE: [1-10]
+ATS_SCORE: [1-100]
 ATS_TIPS:
 - [tip 1]
 - [tip 2]
