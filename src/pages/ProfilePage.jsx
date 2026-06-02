@@ -19,12 +19,6 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
   const [saveMsg, setSaveMsg]         = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting]       = useState(false);
-  const [changingPwd, setChangingPwd] = useState(false);
-  const [newPwd, setNewPwd]           = useState("");
-  const [confirmPwd, setConfirmPwd]   = useState("");
-  const [pwdLoading, setPwdLoading]   = useState(false);
-  const [pwdMsg, setPwdMsg]           = useState("");
-  const [pwdError, setPwdError]       = useState("");
   const avatarRef = useRef();
 
   useEffect(() => {
@@ -86,32 +80,6 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
     const { error } = await supabase.from("profiles").upsert({ id: user.id, username: newUsername.trim().toLowerCase() });
     if (error) setSaveMsg(error.message);
     else { setUsername(newUsername.trim().toLowerCase()); setEditingName(false); setSaveMsg("Saved!"); setTimeout(() => setSaveMsg(""), 2000); }
-  }
-
-  function validatePassword(pwd) {
-    if (
-      pwd.length < 8 ||
-      !/[A-Za-z]/.test(pwd) ||
-      !/[0-9]/.test(pwd) ||
-      !/[^A-Za-z0-9]/.test(pwd)
-    ) return "Password must be at least 8 characters and include a letter, a number, and a special character.";
-    return null;
-  }
-
-  async function changePassword() {
-    setPwdError(""); setPwdMsg("");
-    const err = validatePassword(newPwd);
-    if (err) { setPwdError(err); return; }
-    if (newPwd !== confirmPwd) { setPwdError("Passwords do not match."); return; }
-    setPwdLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: newPwd });
-    if (error) setPwdError(error.message);
-    else {
-      setPwdMsg("Password updated successfully!");
-      setNewPwd(""); setConfirmPwd("");
-      setTimeout(() => { setPwdMsg(""); setChangingPwd(false); }, 2000);
-    }
-    setPwdLoading(false);
   }
 
   async function deleteAccount() {
@@ -219,43 +187,6 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
               )}
             </div>
           ))}
-        </div>
-
-        <div style={{ ...styles.card, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: DARK, marginBottom: 2 }}>Password</div>
-              <div style={{ fontSize: 13, color: GREY }}>Change your account password</div>
-            </div>
-            {!changingPwd && (
-              <button onClick={() => setChangingPwd(true)}
-                style={{ fontSize: 12, color: T, fontWeight: 600, cursor: "pointer", background: TL, padding: "6px 14px", borderRadius: 20, border: "none", fontFamily: "inherit" }}>
-                Change password
-              </button>
-            )}
-          </div>
-          {changingPwd && (
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${TM}` }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <input type="password" value={newPwd} onChange={e => setNewPwd(e.target.value)}
-                  placeholder="New password" style={{ padding: "9px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
-                <input type="password" value={confirmPwd} onChange={e => setConfirmPwd(e.target.value)}
-                  placeholder="Confirm new password" style={{ padding: "9px 14px", borderRadius: 12, border: `1.5px solid ${TM}`, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
-                {pwdError && <div style={{ fontSize: 13, color: "#b91c1c", background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 10, padding: "10px 12px" }}>{pwdError}</div>}
-                {pwdMsg   && <div style={{ fontSize: 13, color: TD, background: TL, border: `1px solid ${TM}`, borderRadius: 10, padding: "10px 12px" }}>{pwdMsg}</div>}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button className="btn-hover" onClick={changePassword} disabled={pwdLoading}
-                    style={{ ...styles.bigBtn, padding: "9px 20px", fontSize: 13, opacity: pwdLoading ? 0.6 : 1 }}>
-                    {pwdLoading ? "..." : "Update Password"}
-                  </button>
-                  <button onClick={() => { setChangingPwd(false); setNewPwd(""); setConfirmPwd(""); setPwdError(""); }}
-                    style={{ padding: "9px 16px", borderRadius: 30, border: `1.5px solid ${TM}`, background: "white", color: GREY, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         <div style={{ ...styles.card, border: "1.5px solid #fca5a5" }}>
