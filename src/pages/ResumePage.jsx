@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabase } from "../supabase.js";
 import { T, TD, TL, TM, DARK, GREY, styles } from "../constants.js";
 import Shell from "../components/Shell.jsx";
 import FBCard from "../components/FBCard.jsx";
@@ -90,7 +91,9 @@ export default function ResumePage({ user, onLogout }) {
     if (!resumeText.trim()) { setError("Could not extract text. Make sure your file is not a scanned image."); return; }
     setLoading(true);
     try {
-      const res = await fetch("/api/resume", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: resumeText, role: targetRole }) });
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || "";
+      const res = await fetch("/api/resume", { method: "POST", headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }, body: JSON.stringify({ text: resumeText, role: targetRole }) });
       const data = await res.json();
       if (data.error) setError(data.error);
       else setResult(parseResult(data.feedback));
@@ -156,12 +159,12 @@ export default function ResumePage({ user, onLogout }) {
           <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 16, animation: "fadeIn .5s ease" }}>
             <div style={{ ...styles.card, display: "flex", gap: 16, flexWrap: "wrap" }}>
               <div style={{ flex: 1, textAlign: "center", padding: "8px 0" }}>
-                <div style={{ fontSize: 48, fontWeight: 800, color: T, lineHeight: 1 }}>{fb.score}<span style={{ fontSize: 18, color: GREY }}>/10</span></div>
+                <div style={{ fontSize: 48, fontWeight: 800, color: T, lineHeight: 1 }}>{fb.score}<span style={{ fontSize: 18, color: GREY }}>/100</span></div>
                 <div style={{ color: GREY, fontSize: 13, marginTop: 4 }}>Overall Score</div>
               </div>
               <div style={{ width: 1, background: TM }} />
               <div style={{ flex: 1, textAlign: "center", padding: "8px 0" }}>
-                <div style={{ fontSize: 48, fontWeight: 800, color: TD, lineHeight: 1 }}>{fb.ats}<span style={{ fontSize: 18, color: GREY }}>/10</span></div>
+                <div style={{ fontSize: 48, fontWeight: 800, color: TD, lineHeight: 1 }}>{fb.ats}<span style={{ fontSize: 18, color: GREY }}>/100</span></div>
                 <div style={{ color: GREY, fontSize: 13, marginTop: 4 }}>ATS Score</div>
               </div>
             </div>
