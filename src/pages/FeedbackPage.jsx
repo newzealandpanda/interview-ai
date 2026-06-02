@@ -35,12 +35,12 @@ export default function FeedbackPage({ user, onLogout, role, level, mode, transc
             {fb.score && (
               <div style={{ ...styles.card, display: "flex", alignItems: "center", gap: 24 }}>
                 <div style={{ fontSize: 60, fontWeight: 800, color: T, lineHeight: 1, flexShrink: 0 }}>
-                  {fb.score}<span style={{ fontSize: 22, color: GREY }}>/10</span>
+                  {fb.score}<span style={{ fontSize: 22, color: GREY }}>/100</span>
                 </div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 17, color: DARK, marginBottom: 5 }}>Overall Score</div>
                   <div style={{ color: GREY, fontSize: 14 }}>
-                    {parseInt(fb.score) >= 7 ? "You're interview-ready! 🚀" : parseInt(fb.score) >= 5 ? "Good progress, keep practicing." : "Room to grow - practice makes perfect."}
+                    {parseInt(fb.score) >= 70 ? "You're interview-ready! 🚀" : parseInt(fb.score) >= 50 ? "Good progress, keep practicing." : "Room to grow - practice makes perfect."}
                   </div>
                 </div>
               </div>

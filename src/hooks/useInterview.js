@@ -235,7 +235,7 @@ export function useInterview({ navigate }) {
       setLoadingFB(false); return;
     }
     try {
-      const prompt = `Analyze this mock interview for a ${level?.label} ${role?.label} role.\n\nTRANSCRIPT:\n${conv}\n\nRespond in this EXACT format:\nOVERALL_SCORE: [1-10]\nSTRENGTHS:\n• [point 1]\n• [point 2]\n• [point 3]\nWEAKNESSES:\n• [point 1]\n• [point 2]\nTIPS:\n• [tip 1]\n• [tip 2]\n• [tip 3]\nVERDICT: [2-3 sentences]`;
+      const prompt = `Analyze this mock interview for a ${level?.label} ${role?.label} role.\n\nTRANSCRIPT:\n${conv}\n\nRespond in this EXACT format:\nOVERALL_SCORE: [1-100]\nSTRENGTHS:\n• [point 1]\n• [point 2]\n• [point 3]\nWEAKNESSES:\n• [point 1]\n• [point 2]\nTIPS:\n• [tip 1]\n• [tip 2]\n• [tip 3]\nVERDICT: [2-3 sentences]`;
       const text = await askGroq([{ role: "user", content: prompt }], {
         type: "feedback",
         mode: mode?.id,
@@ -248,7 +248,7 @@ export function useInterview({ navigate }) {
         await supabase.from("interview_results").insert({
           user_id: user.id, role: role?.label, level: level?.label,
           mode: mode?.label, duration,
-          score: scoreMatch ? parseInt(scoreMatch[1]) : null,
+          score: scoreMatch ? Math.min(100, Math.max(1, parseInt(scoreMatch[1]))) : null,
           answers_count: answers.length, feedback_raw: finalText,
           verdict: verdictMatch ? verdictMatch[1].trim().slice(0, 500) : "",
         });

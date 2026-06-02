@@ -140,7 +140,7 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
               </div>
               {avgScore && (
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{avgScore}<span style={{ fontSize: 14, color: GREY }}>/10</span></div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: T }}>{avgScore}<span style={{ fontSize: 14, color: GREY }}>/100</span></div>
                   <div style={{ fontSize: 12, color: GREY }}>Avg Score</div>
                 </div>
               )}
@@ -176,7 +176,7 @@ export default function ProfilePage({ user, onLogout, onLogin, onDeleted, onAvat
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <span style={{ ...styles.tag, background: `${modeColors[r.mode] || T}22`, color: modeColors[r.mode] || T }}>{r.mode}</span>
-                  {r.score && <div style={{ fontWeight: 800, fontSize: 20, color: r.score >= 7 ? "#22c55e" : r.score >= 5 ? "#f59e0b" : "#ef4444" }}>{r.score}<span style={{ fontSize: 13, color: GREY, fontWeight: 400 }}>/10</span></div>}
+                  {r.score && <div style={{ fontWeight: 800, fontSize: 20, color: r.score >= 70 ? "#22c55e" : r.score >= 50 ? "#f59e0b" : "#ef4444" }}>{r.score}<span style={{ fontSize: 13, color: GREY, fontWeight: 400 }}>/100</span></div>}
                   <span style={{ color: GREY, fontSize: 16 }}>{expanded === i ? "▲" : "▼"}</span>
                 </div>
               </div>

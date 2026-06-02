@@ -119,7 +119,7 @@ export default function LeaderboardPage({ user, onLogout }) {
           <div style={{ textAlign: "center", padding: 60, color: GREY }}>Loading rankings...</div>
         ) : filtered.length === 0 ? (
           <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
-            <img src="/leaderboard-no-results.png" alt="" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 12 }} />
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
             <p style={{ color: GREY, fontSize: 15 }}>No results yet for this filter. Be the first!</p>
             <button className="btn-hover" style={{ ...styles.bigBtn, marginTop: 16 }} onClick={() => navigate("/practice")}>Start Interview</button>
           </div>
@@ -139,7 +139,7 @@ export default function LeaderboardPage({ user, onLogout }) {
             {filtered.slice(0, 20).map((entry, i) => {
               const rank = i + 1;
               const isMe = user && entry.username === myUsername;
-              const scoreColor = entry.best_score >= 8 ? "#22c55e" : entry.best_score >= 6 ? "#f59e0b" : "#ef4444";
+              const scoreColor = entry.best_score >= 80 ? "#22c55e" : entry.best_score >= 60 ? "#f59e0b" : "#ef4444";
 
               return (
                 <div key={`${entry.username}-${entry.role}-${i}`}
