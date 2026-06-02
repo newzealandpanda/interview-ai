@@ -168,12 +168,12 @@ export default function ResumePage({ user, onLogout }) {
                 <div style={{ color: GREY, fontSize: 13, marginTop: 4 }}>ATS Score</div>
               </div>
             </div>
-            {fb.summary   && <FBCard icon="📋" title="Summary"          text={fb.summary}   color={T}       />}
-            {fb.strengths && <FBCard icon="💪" title="Strengths"        text={fb.strengths} color="#22c55e" />}
-            {fb.improve   && <FBCard icon="🔧" title="Improvements"     text={fb.improve}   color="#f59e0b" />}
-            {fb.ats_tips  && <FBCard icon="🤖" title="ATS Optimization" text={fb.ats_tips}  color={TD}      />}
-            {fb.missing   && <FBCard icon="⚠️" title="Missing Sections" text={fb.missing}   color="#ef4444" />}
-            {fb.verdict   && <FBCard icon="🏁" title="Next Steps"       text={fb.verdict}   color={T}       />}
+            {fb.summary   && <FBCard iconImg="/verdict.png" title="Summary"          text={fb.summary}   color={T}       />}
+            {fb.strengths && <FBCard iconImg="/strengths.png" title="Strengths"        text={fb.strengths} color="#22c55e" />}
+            {fb.improve   && <FBCard iconImg="/improve-areas.png" title="Improvements"     text={fb.improve}   color="#f59e0b" />}
+            {fb.ats_tips  && <FBCard iconImg="/typs-for-next-time.png" title="ATS Optimization" text={fb.ats_tips}  color={TD}      />}
+            {fb.missing   && <FBCard iconImg="/improve-areas.png" title="Missing Sections" text={fb.missing}   color="#ef4444" />}
+            {fb.verdict   && <FBCard iconImg="/verdict.png" title="Next Steps"       text={fb.verdict}   color={T}       />}
             <button className="btn-hover" style={{ ...styles.bigBtn, alignSelf: "flex-start" }} onClick={() => { setFile(null); setResult(null); }}>
               Check Another Resume
             </button>
