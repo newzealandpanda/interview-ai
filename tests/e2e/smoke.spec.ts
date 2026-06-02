@@ -6,9 +6,12 @@ import { test, expect } from '@playwright/test';
 test.describe('Smoke - реальный Groq', () => {
 
   test('/api/chat - Groq отвечает на реальный запрос', async ({ request }) => {
+    // базовый URL Supabase - без /rest/v1/
+    const supabaseBase = 'https://jhevmjvkvdruswuarozs.supabase.co';
+
     // шаг 1 - логинимся в Supabase и получаем JWT токен
     const loginRes = await request.post(
-      `${process.env.VITE_SUPABASE_URL}/auth/v1/token?grant_type=password`,
+      `${supabaseBase}/auth/v1/token?grant_type=password`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -45,7 +48,6 @@ test.describe('Smoke - реальный Groq', () => {
     expect(chatRes.status()).toBe(200);
     const body = await chatRes.json();
 
-    // Groq вернул текст
     expect(body.text).toBeTruthy();
     expect(body.text.length).toBeGreaterThan(5);
 
