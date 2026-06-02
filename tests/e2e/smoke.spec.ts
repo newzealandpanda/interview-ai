@@ -1,34 +1,55 @@
 import { test, expect } from '@playwright/test';
 
 // smoke тест - реальный запрос к Groq через /api/chat
-// не использует браузер - просто HTTP запрос
-// запускается только мануально
+// запускается только мануально через GitHub Actions
 
 test.describe('Smoke - реальный Groq', () => {
 
   test('/api/chat - Groq отвечает на реальный запрос', async ({ request }) => {
-    // request - это встроенный в Playwright HTTP клиент
-    const response = await request.post(`${process.env.BASE_URL}/api/chat`, {
-      headers: { 'Content-Type': 'application/json' },
+    // шаг 1 - логинимся в Supabase и получаем JWT токен
+    const loginRes = await request.post(
+      `${process.env.VITE_SUPABASE_URL}/auth/v1/token?grant_type=password`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.VITE_SUPABASE_ANON_KEY!,
+        },
+        data: {
+          email: process.env.TEST_USER_EMAIL,
+          password: process.env.TEST_USER_PASSWORD,
+        }
+      }
+    );
+
+    expect(loginRes.status()).toBe(200);
+    const { access_token } = await loginRes.json();
+    expect(access_token).toBeTruthy();
+
+    // шаг 2 - реальный запрос к Groq с токеном
+    const chatRes = await request.post(`${process.env.BASE_URL}/api/chat`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
+      },
       data: {
-        messages: [
-          { role: 'system', content: 'You are an interviewer. Ask one short question.' },
-          { role: 'user', content: 'Hello, I am ready for the interview.' }
-        ]
+        messages: [{ role: 'user', content: 'Hello, I am ready.' }],
+        role: 'QA Engineer',
+        level: 'Junior',
+        mode: 'normal',
+        asked: 0,
+        timeRemaining: 1200,
+        duration: 20,
       }
     });
 
-    // API отвечает 200
-    expect(response.status()).toBe(200);
+    expect(chatRes.status()).toBe(200);
+    const body = await chatRes.json();
 
-    const body = await response.json();
+    // Groq вернул текст
+    expect(body.text).toBeTruthy();
+    expect(body.text.length).toBeGreaterThan(5);
 
-    // ответ содержит текст от Groq
-    expect(body.reply).toBeTruthy();
-    expect(typeof body.reply).toBe('string');
-    expect(body.reply.length).toBeGreaterThan(10);
-
-    console.log('Groq ответил:', body.reply.slice(0, 100));
+    console.log('Groq ответил:', body.text.slice(0, 100));
   });
 
 });

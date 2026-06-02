@@ -1,7 +1,7 @@
 name: Smoke Test (Groq real)
 
 on:
-  workflow_dispatch: # только мануальный запуск - кнопка в GitHub Actions
+  workflow_dispatch:
 
 jobs:
   smoke:
@@ -27,6 +27,8 @@ jobs:
           BASE_URL: ${{ secrets.BASE_URL }}
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload report
         if: always()
