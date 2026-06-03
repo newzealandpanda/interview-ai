@@ -61,7 +61,7 @@ export const JOB_SITES = [
   { name: "Remotive",         desc: "Vetted remote jobs at trusted tech companies. Updated daily, no ghost listings.",        url: "https://remotive.com",                tags: ["Remote", "Curated"] },
   { name: "Pyjama Jobs",      desc: "AI matches you to roles where you are already a strong fit. Cuts application noise.",    url: "https://kickresume.com/pyjama-jobs",  tags: ["AI-Powered", "Remote"] },
   { name: "Toptal",           desc: "Exclusive network for top 3% freelancers in dev, design, finance and PM.",              url: "https://toptal.com",                  tags: ["Freelance"] },
-  { name: "Working Nomads",   desc: "Remote job listings curated for digital nomads in tech and marketing.",                  url: "https://workingnomads.com",           tags: ["Nomad", "Remote"] },
+  { name: "Working Nomads",   desc: "Remote job listings curated for digital nomads in tech and marketing.",                  url: "https://workingnomads.com",           tags: ["Remote", "Curated"] },
   { name: "PowerToFly",       desc: "Remote roles with focus on diversity and inclusion. Virtual events and community.",      url: "https://powertofly.com",              tags: ["Remote", "Curated"] },
   { name: "TryRemotely",      desc: "16,000+ remote jobs from fast-growing companies across all experience levels.",         url: "https://tryremotely.com",             tags: ["Remote"] },
   { name: "Remote.co",        desc: "Fully remote job board with career guides and company reviews. High listing quality.",  url: "https://remote.co",                   tags: ["Remote", "Curated"] },
