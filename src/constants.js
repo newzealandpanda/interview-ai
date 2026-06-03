@@ -67,7 +67,6 @@ export const JOB_SITES = [
   { name: "Remote.co",        desc: "Fully remote job board with career guides and company reviews. High listing quality.",  url: "https://remote.co",                   tags: ["Remote", "Curated"] },
   { name: "Flexa",            desc: "Find companies with genuine flexible culture. Ratings and insights before you apply.",  url: "https://flexa.careers",               tags: ["Remote", "Curated"] },
   { name: "Arc.dev",          desc: "Vetted remote roles for developers. Personalized matches based on skills and level.",   url: "https://arc.dev",                     tags: ["Remote", "Curated"] },
-  { name: "Jobfound Remote",  desc: "Focused remote job listings with clean filtering and no sponsored noise.",              url: "https://jobfound.org",                tags: ["Remote"] },
 ];
 
 export const DEFAULT_DURATION = 20 * 60;
