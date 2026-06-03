@@ -65,6 +65,10 @@ export const JOB_SITES = [
   { name: "Toptal",           desc: "Top 3% freelancers in dev, design, finance and PM",       url: "https://toptal.com",                  tag: "Freelance" },
   { name: "JS Remotely",      desc: "Remote roles for React, Vue, Node and Angular devs",      url: "https://jsremotely.com",              tag: "JS/Frontend" },
   { name: "Working Nomads",   desc: "Remote listings for digital nomads in tech and marketing", url: "https://workingnomads.com",           tag: "Nomad" },
+  { name: "PowerToFly",       desc: "Remote roles focused on diversity and inclusion in tech",      url: "https://powertofly.com",              tag: "Remote" },
+  { name: "TryRemotely",      desc: "16,000+ remote jobs from fast-growing companies",             url: "https://tryremotely.com",             tag: "Remote" },
+  { name: "Remote.co",        desc: "Fully remote job board with career resources and guides",     url: "https://remote.co",                   tag: "Remote" },
+  { name: "Flexa",            desc: "Find companies with genuine flexible and remote culture",     url: "https://flexa.careers",               tag: "Remote" },
 ];
 
 export const DEFAULT_DURATION = 20 * 60;
