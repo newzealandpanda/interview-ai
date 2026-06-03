@@ -79,7 +79,6 @@ export default function Shell({ children, user, onLogout }) {
 
       <footer style={{ background: DARK, color: TM, textAlign: "center", padding: "32px 5%", fontSize: 12 }}>
         <p style={{ margin: 0, fontWeight: 600 }}>Elohire - Powered by Claude AI - Open Source on GitHub</p>
-        <p style={{ margin: "6px 0 0", opacity: 0.5 }}>Free forever · No account required · Voice-first</p>
       </footer>
     </div>
   );
