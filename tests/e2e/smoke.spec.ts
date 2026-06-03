@@ -1,15 +1,15 @@
 import { test, expect } from '@playwright/test';
 
-// smoke тест - реальный запрос к Groq через /api/chat
-// запускается только мануально через GitHub Actions
+// smoke test - real Groq request via /api/chat
+// run manually only via GitHub Actions
 
-test.describe('Smoke - реальный Groq', () => {
+test.describe('Smoke - real Groq', () => {
 
-  test('/api/chat - Groq отвечает на реальный запрос', async ({ request }) => {
-    // базовый URL Supabase - без /rest/v1/
+  test('/api/chat - Groq responds to a real request', async ({ request }) => {
+    // Supabase base URL - without /rest/v1/
     const supabaseBase = 'https://jhevmjvkvdruswuarozs.supabase.co';
 
-    // шаг 1 - логинимся в Supabase и получаем JWT токен
+    // step 1 - login to Supabase and get JWT token
     const loginRes = await request.post(
       `${supabaseBase}/auth/v1/token?grant_type=password`,
       {
@@ -28,7 +28,7 @@ test.describe('Smoke - реальный Groq', () => {
     const { access_token } = await loginRes.json();
     expect(access_token).toBeTruthy();
 
-    // шаг 2 - реальный запрос к Groq с токеном
+    // step 2 - real request to Groq with auth token
     const chatRes = await request.post(`${process.env.BASE_URL}/api/chat`, {
       headers: {
         'Content-Type': 'application/json',
@@ -51,7 +51,7 @@ test.describe('Smoke - реальный Groq', () => {
     expect(body.text).toBeTruthy();
     expect(body.text.length).toBeGreaterThan(5);
 
-    console.log('Groq ответил:', body.text.slice(0, 100));
+    console.log('Groq replied:', body.text.slice(0, 100));
   });
 
 });

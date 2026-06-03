@@ -6,7 +6,7 @@ export async function loginAs(page: Page, email: string, password: string) {
   await page.getByPlaceholder('you@example.com').fill(email);
   await page.getByPlaceholder('8+ chars, letter, number, symbol').fill(password);
 
-  // кнопка Submit в форме - берём последнюю кнопку с таким текстом
+  // use .last() - there are two "Sign In" buttons, the form button is the last one
   await page.getByRole('button', { name: 'Sign In' }).last().click();
 
   await page.waitForURL('**/profile');
