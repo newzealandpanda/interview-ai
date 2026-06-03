@@ -119,7 +119,7 @@ export default function LeaderboardPage({ user, onLogout }) {
           <div style={{ textAlign: "center", padding: 60, color: GREY }}>Loading rankings...</div>
         ) : filtered.length === 0 ? (
           <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+            <img src="/leaderboard-no-results.png" alt="" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 12 }} />
             <p style={{ color: GREY, fontSize: 15 }}>No results yet for this filter. Be the first!</p>
             <button className="btn-hover" style={{ ...styles.bigBtn, marginTop: 16 }} onClick={() => navigate("/practice")}>Start Interview</button>
           </div>
@@ -180,13 +180,13 @@ export default function LeaderboardPage({ user, onLogout }) {
                   {/* Avg score */}
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontWeight: 700, fontSize: 16, color: GREY }}>{entry.avg_score}</span>
-                    <span style={{ fontSize: 11, color: GREY }}>/10</span>
+                    <span style={{ fontSize: 11, color: GREY }}>/100</span>
                   </div>
 
                   {/* Best score */}
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontWeight: 800, fontSize: 20, color: scoreColor }}>{entry.best_score}</span>
-                    <span style={{ fontSize: 12, color: GREY }}>/10</span>
+                    <span style={{ fontSize: 12, color: GREY }}>/100</span>
                   </div>
                 </div>
               );

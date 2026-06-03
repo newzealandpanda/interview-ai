@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabase.js";
 import { T, TD, TL, TM, DARK, GREY, styles } from "../constants.js";
 import Shell from "../components/Shell.jsx";
@@ -6,6 +7,7 @@ import FBCard from "../components/FBCard.jsx";
 import Waveform from "../components/Waveform.jsx";
 
 export default function ResumePage({ user, onLogout }) {
+  const navigate = useNavigate();
   const [file, setFile]             = useState(null);
   const [targetRole, setTargetRole] = useState("QA Engineer");
   const [loading, setLoading]       = useState(false);
@@ -75,6 +77,7 @@ export default function ResumePage({ user, onLogout }) {
 
   async function analyzeResume() {
     if (!file) return;
+    if (!user) { navigate("/login"); return; }
     setError(""); setResult(null);
     const isPDF = file.type === "application/pdf";
     const isDOCX = file.name.endsWith(".docx");
