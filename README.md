@@ -35,6 +35,16 @@ Voice-powered mock interview app for IT professionals. Practice technical interv
 | `interview_results` | Session results (role, level, score, feedback) |
 | `leaderboard` | View aggregating top results |
 
+## Testing
+
+Playwright e2e suite - 11 tests covering auth, interview flow, resume, and protected routes.
+CI runs on every push to main via GitHub Actions. Smoke test (real Groq) is triggered manually.
+
+```bash
+npx playwright test
+npx playwright show-report
+```
+
 ## Getting Started
 
 ```bash
