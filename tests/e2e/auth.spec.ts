@@ -1,30 +1,35 @@
-import { test, expect } from '@playwright/test';
-import { loginTestUser } from '../helpers/auth';
+import { test, expect } from '../fixtures';
+import { LoginPage } from '../pages/LoginPage';
 
 test.describe('Auth', () => {
 
   test('successful login - redirects to /profile', async ({ page }) => {
-    await loginTestUser(page);
+    const loginPage = new LoginPage(page);
+    await loginPage.login(
+      process.env.TEST_USER_EMAIL!,
+      process.env.TEST_USER_PASSWORD!,
+    );
     await expect(page).toHaveURL(/\/profile/);
   });
 
   test('wrong password - shows error message', async ({ page }) => {
-    await page.goto('/login');
-    await page.getByPlaceholder('you@example.com').fill(process.env.TEST_USER_EMAIL!);
-    await page.getByPlaceholder('8+ chars, letter, number, symbol').fill('WrongPassword!1');
-    await page.getByRole('button', { name: 'Sign In' }).last().click();
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.emailInput.fill(process.env.TEST_USER_EMAIL!);
+    await loginPage.passwordInput.fill('WrongPassword!1');
+    await loginPage.signInButton.click();
 
     await expect(page.locator('div').filter({ hasText: /invalid login|credentials/i }).last())
       .toBeVisible({ timeout: 10_000 });
   });
 
-  test('logout - returns to /', async ({ page }) => {
-    await loginTestUser(page);
+  test('logout - returns to /', async ({ authenticatedPage: page }) => {
+    // page is already logged in via fixture
 
     // open profile dropdown
     await page.getByRole('button', { name: /profile/i }).click();
 
-    // Sign Out is hidden via display:none on parent - dispatchEvent bypasses visibility check
+    // Sign Out is hidden via display:none - dispatchEvent bypasses visibility check
     await page.locator('div').filter({ hasText: /^Sign Out$/ }).dispatchEvent('click');
 
     await expect(page).toHaveURL('/');
