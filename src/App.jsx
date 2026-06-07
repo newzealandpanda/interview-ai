@@ -10,7 +10,6 @@ import AuthPage         from "./pages/AuthPage.jsx";
 import ProfilePage      from "./pages/ProfilePage.jsx";
 import ResumePage       from "./pages/ResumePage.jsx";
 import LeaderboardPage  from "./pages/LeaderboardPage.jsx";
-import ResetPasswordPage from "./pages/ResetPasswordPage.jsx";
 
 function AppRoutes() {
   const navigate = useNavigate();
@@ -40,6 +39,8 @@ function AppRoutes() {
           duration={iv.duration} setDuration={iv.setDuration}
           micAllowed={iv.micAllowed}
           onStart={iv.startSession}
+          jobDescription={iv.jobDescription}
+          setJobDescription={iv.setJobDescription}
         />
       } />
 
@@ -93,10 +94,6 @@ function AppRoutes() {
 
       <Route path="/leaderboard" element={
         <LeaderboardPage {...shellProps} />
-      } />
-
-      <Route path="/reset-password" element={
-        <ResetPasswordPage {...shellProps} />
       } />
     </Routes>
   );

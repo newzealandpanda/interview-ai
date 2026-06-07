@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { T, TD, TL, TM, DARK, GREY, styles, ROLES, LEVELS, MODES } from "../constants.js";
 import Shell from "../components/Shell.jsx";
 
-export default function SelectPage({ user, onLogout, role, setRole, level, setLevel, mode, setMode, duration, setDuration, micAllowed, onStart }) {
+export default function SelectPage({ user, onLogout, role, setRole, level, setLevel, mode, setMode, duration, setDuration, micAllowed, onStart, jobDescription, setJobDescription }) {
   const navigate = useNavigate();
 
   function handleStart() {
@@ -17,7 +17,7 @@ export default function SelectPage({ user, onLogout, role, setRole, level, setLe
     <Shell user={user} onLogout={onLogout}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "52px 5%" }}>
 
-        <div style={styles.chip}>Step 1 of 4</div>
+        <div style={styles.chip}>Step 1 of 5</div>
         <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Role</h2>
         <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>Questions will be tailored to your specialization.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14 }} className="grid-2col">
@@ -34,7 +34,32 @@ export default function SelectPage({ user, onLogout, role, setRole, level, setLe
         </div>
 
         <div style={{ marginTop: 52 }}>
-          <div style={styles.chip}>Step 2 of 4</div>
+          <div style={styles.chip}>Step 2 of 5</div>
+          <h2 style={{ ...styles.h2, marginBottom: 6 }}>Paste a Job Description <span style={{ fontSize: 14, fontWeight: 500, color: GREY }}>(optional)</span></h2>
+          <p style={{ color: GREY, marginBottom: 16, fontSize: 15 }}>The AI will tailor questions to match this specific role. Skip to use general questions.</p>
+          <div style={{ ...styles.card, padding: 0, overflow: "hidden" }}>
+            <textarea
+              value={jobDescription}
+              onChange={e => setJobDescription(e.target.value.slice(0, 3000))}
+              placeholder="Paste the job description here..."
+              style={{ width: "100%", minHeight: 160, padding: "16px 20px", fontSize: 14, fontFamily: "inherit", border: "none", outline: "none", resize: "vertical", color: DARK, lineHeight: 1.6, boxSizing: "border-box", background: "transparent" }}
+            />
+            <div style={{ padding: "8px 20px", borderTop: `1px solid ${TM}`, fontSize: 12, color: GREY, textAlign: "right" }}>
+              {jobDescription.length}/3000
+              {jobDescription.length > 0 && (
+                <span onClick={() => setJobDescription("")} style={{ marginLeft: 12, color: T, fontWeight: 600, cursor: "pointer" }}>Clear</span>
+              )}
+            </div>
+          </div>
+          {jobDescription.length > 0 && (
+            <div style={{ marginTop: 10, fontSize: 13, color: TD, fontWeight: 600 }}>
+              ✓ Interview will be tailored to this job description
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 52 }}>
+          <div style={styles.chip}>Step 3 of 5</div>
           <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Level</h2>
           <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>AI adjusts question complexity and scoring to your experience.</p>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
@@ -53,7 +78,7 @@ export default function SelectPage({ user, onLogout, role, setRole, level, setLe
         </div>
 
         <div style={{ marginTop: 52 }}>
-          <div style={styles.chip}>Step 3 of 4</div>
+          <div style={styles.chip}>Step 4 of 5</div>
           <h2 style={{ ...styles.h2, marginBottom: 6 }}>Choose Your Interviewer</h2>
           <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>Each mode changes the tone, pressure, and feedback style.</p>
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
@@ -72,7 +97,7 @@ export default function SelectPage({ user, onLogout, role, setRole, level, setLe
         </div>
 
         <div style={{ marginTop: 52 }}>
-          <div style={styles.chip}>Step 4 of 4</div>
+          <div style={styles.chip}>Step 5 of 5</div>
           <h2 style={{ ...styles.h2, marginBottom: 6 }}>Session Duration</h2>
           <p style={{ color: GREY, marginBottom: 28, fontSize: 15 }}>How long do you want your interview to be?</p>
           <div style={{ ...styles.card, padding: "28px 32px" }}>
@@ -97,7 +122,7 @@ export default function SelectPage({ user, onLogout, role, setRole, level, setLe
 
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: 12, marginTop: 24 }}>
           <div style={{ background: "white", border: `1.5px solid ${TM}`, borderRadius: "16px 16px 0 16px", padding: "10px 16px", fontSize: 13, color: DARK, fontWeight: 500, boxShadow: `0 4px 12px ${T}18` }}>
-            {!role ? "Choose your role to begin." : !level ? "Great! Now pick your level." : !mode ? "Now choose your interviewer." : "You're all set - let's go! 🚀"}
+            {!role ? "Choose your role to begin." : !level ? "Great! Now pick your level." : !mode ? "Now choose your interviewer." : jobDescription ? "JD loaded - let's go! 🎯" : "You're all set - let's go! 🚀"}
           </div>
           <div style={{ flexShrink: 0, animation: "float 3s ease-in-out infinite" }}>
             <img src="/robot-standing.png" alt="Robot" style={{ width: 90, height: "auto" }} />

@@ -19,6 +19,7 @@ export function useInterview({ navigate }) {
   const [user, setUser]             = useState(null);
   const [qIndex, setQIndex]         = useState(0);
   const [avatarUrl, setAvatarUrl]   = useState(null);
+  const [jobDescription, setJobDescription] = useState("");
 
   const timerRef        = useRef(null);
   const synthRef        = useRef(window.speechSynthesis);
@@ -169,6 +170,7 @@ export function useInterview({ navigate }) {
         asked,
         timeRemaining,
         duration,
+        jobDescription: jobDescription || "",
       });
       setSpeaking(false); setStatusMsg("");
       if (!response || endedRef.current) return;
@@ -208,7 +210,7 @@ export function useInterview({ navigate }) {
     questionsAsked.current = 0; setTranscript([]); setQIndex(0);
     setTimeLeft(duration * 60); setRunning(true);
     navigate("/interview");
-    conversationRef.current = [{ role: "user", content: `[START] Mock interview for ${level?.label} ${role?.label}. Mode: ${mode?.label || "Normal"}. Begin with an opener.` }];
+    conversationRef.current = [{ role: "user", content: `[START] Mock interview for ${level?.label} ${role?.label}. Mode: ${mode?.label || "Normal"}.${jobDescription ? " Tailor questions to the provided job description." : ""} Begin with an opener.` }];
     const greetings = {
       friendly: `Hi there! I'm Jamie. We have ${duration} minutes for a ${level?.label} ${role?.label} interview. Take your time and speak naturally. Ready?`,
       normal:   `Hello, I'm Alex. We have ${duration} minutes for a ${level?.label} ${role?.label} interview. Let's get started.`,
@@ -267,6 +269,7 @@ export function useInterview({ navigate }) {
   return {
     user, setUser, avatarUrl, setAvatarUrl,
     role, setRole, level, setLevel, mode, setMode, duration, setDuration,
+    jobDescription, setJobDescription,
     qIndex, timeLeft, running, transcript, listening, speaking, statusMsg,
     feedbackRaw, loadingFB, micAllowed, fb, pct, timerColor,
     startSession, endSession, speak,

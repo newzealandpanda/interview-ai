@@ -20,12 +20,18 @@ INTERVIEW RULES: Ask ONE precise, probing question at a time. Each question shou
 
 const MODE_LABELS = { friendly: "Friendly", normal: "Normal", tough: "Tough" };
 
-function buildInterviewSystem(role, level, mode, asked, timeRemaining, duration) {
+function buildInterviewSystem(role, level, mode, asked, timeRemaining, duration, jobDescription) {
   const base = (MODE_SYSTEMS[mode] || MODE_SYSTEMS.normal)(
     role || "IT professional",
     level || "Mid-level"
   );
-  return base + `
+  const jdBlock = jobDescription?.trim()
+    ? `
+JOB DESCRIPTION:
+${jobDescription.slice(0, 2000)}
+Prioritize questions relevant to this job description. Reference specific requirements when asking questions.`
+    : "";
+  return base + jdBlock + `
 CONTEXT:
 - Questions asked: ${asked}, Time remaining: ${Math.floor(timeRemaining / 60)} min
 - Total duration: ${duration} min, Min: ${MIN_QUESTIONS}, Max: ${MAX_QUESTIONS}
@@ -49,7 +55,7 @@ export default async function handler(req, res) {
 
   if (!requireAuth(req, res)) return;
 
-  const { messages, type, role, level, mode, asked, timeRemaining, duration } = req.body;
+  const { messages, type, role, level, mode, asked, timeRemaining, duration, jobDescription } = req.body;
 
   if (!Array.isArray(messages) || messages.length === 0)
     return res.status(400).json({ error: "Invalid messages" });
@@ -74,10 +80,16 @@ export default async function handler(req, res) {
   if (mode && !ALLOWED_MODES.has(mode))
     return res.status(400).json({ error: "Invalid mode" });
 
+  if (jobDescription !== undefined && typeof jobDescription !== "string")
+    return res.status(400).json({ error: "Invalid jobDescription" });
+
+  if (jobDescription && jobDescription.length > 3000)
+    return res.status(400).json({ error: "Job description too long" });
+
   const system =
     type === "feedback"
       ? buildFeedbackSystem(mode)
-      : buildInterviewSystem(role, level, mode, asked ?? 0, timeRemaining ?? 0, duration ?? 20);
+      : buildInterviewSystem(role, level, mode, asked ?? 0, timeRemaining ?? 0, duration ?? 20, jobDescription);
 
   try {
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
