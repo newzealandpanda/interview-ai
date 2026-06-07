@@ -30,4 +30,19 @@ test.describe('Interview flow (Groq mocked)', () => {
     await interviewPage.isLoaded();
   });
 
+  test('Select - interview starts with job description filled', async ({ authenticatedPage: page }) => {
+    const selectPage = new SelectPage(page);
+    await selectPage.goto();
+    await page.getByText('QA Engineer').click();
+
+    // fill optional JD field - does not block Start button
+    await page.locator('textarea').fill('We need a QA engineer with Playwright experience.');
+
+    await page.getByText('Junior').click();
+    await page.getByText('Normal').first().click();
+    await page.getByRole('button', { name: /Start Interview/i }).click();
+
+    await expect(page).toHaveURL(/\/interview/, { timeout: 15_000 });
+  });
+
 });
