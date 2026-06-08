@@ -75,6 +75,7 @@ export function useInterview({ navigate }) {
   const speakBrowser = useCallback((text, onDone) => {
     const synth = window.speechSynthesis;
     synth.cancel();
+    setSpeaking(true);
     const doSpeak = () => {
       const utt = new SpeechSynthesisUtterance(text);
       utt.lang = "en-US"; utt.rate = 0.93; utt.pitch = 1.0;
@@ -119,7 +120,7 @@ export function useInterview({ navigate }) {
       audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
       audio.play();
     } catch {
-      // Fallback to browser TTS
+      // Fallback to browser TTS (setSpeaking stays true, speakBrowser will reset it)
       speakBrowser(text, onDone);
     }
   }, [speakBrowser]);
