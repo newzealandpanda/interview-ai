@@ -41,7 +41,8 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      return res.status(502).json({ error: err.error?.message || "TTS failed" });
+      console.error("Groq TTS error:", response.status, JSON.stringify(err));
+      return res.status(502).json({ error: err.error?.message || "TTS failed", status: response.status, detail: err });
     }
 
     const arrayBuffer = await response.arrayBuffer();
