@@ -102,72 +102,52 @@ export function useInterview({ navigate }) {
 
   // ── STT ───────────────────────────────────────────────────────────────────
   const startListening = useCallback((onResult) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setStatusMsg("Speech recognition not supported in this browser."); return; }
+    const rec = new SR();
+    rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = true;
+
+    let finalText = "";
+    let interimText = "";
+    let silenceTimer = null;
+    const SILENCE_MS = 2800;
+
     setListening(true); setStatusMsg("🎙 Listening...");
-    const chunks = [];
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      mediaRecRef.current = recorder;
-      let silenceTimer = null;
-      const SILENCE_MS = 3000;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
+    rec.onresult = (e) => {
+      finalText = ""; interimText = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+        else interimText += e.results[i][0].transcript;
+      }
+      setStatusMsg("🎙 " + (finalText + interimText).trim());
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        const result = (finalText + interimText).trim();
+        if (result.length > 2) rec.stop();
+      }, SILENCE_MS);
+    };
 
-      const audioCtx = new AudioContext();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      source.connect(analyser);
-      const freqData = new Uint8Array(analyser.frequencyBinCount);
+    rec.onerror = (e) => {
+      clearTimeout(silenceTimer);
+      if (e.error === "no-speech") {
+        setStatusMsg("🎙 No speech detected, listening again...");
+        rec.stop();
+        setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 500);
+      } else { setListening(false); setStatusMsg("Mic error: " + e.error); }
+    };
 
-      const resetSilence = () => {
-        clearTimeout(silenceTimer);
-        silenceTimer = setTimeout(() => {
-          if (recorder.state === "recording") recorder.stop();
-        }, SILENCE_MS);
-      };
+    rec.onend = () => {
+      clearTimeout(silenceTimer);
+      setListening(false); setStatusMsg("");
+      const result = (finalText + interimText).trim();
+      if (result.length > 2 && !endedRef.current) onResult(result);
+      else if (result.length <= 2 && !endedRef.current) {
+        setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 300);
+      }
+    };
 
-      const activityCheck = setInterval(() => {
-        analyser.getByteFrequencyData(freqData);
-        const volume = freqData.reduce((a, b) => a + b, 0) / freqData.length;
-        if (volume > 10) resetSilence();
-      }, 200);
-
-      resetSilence();
-      recorder.start();
-
-      recorder.onstop = async () => {
-        clearInterval(activityCheck);
-        audioCtx.close();
-        stream.getTracks().forEach(t => t.stop());
-        setListening(false); setStatusMsg("");
-        if (endedRef.current) return;
-        if (chunks.length === 0) { startListening(onResult); return; }
-        try {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const formData = new FormData();
-          formData.append("file", blob, "audio.webm");
-          formData.append("model", "whisper-large-v3-turbo");
-          formData.append("language", "en");
-          const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token || "";
-          const res = await fetch("/api/stt", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
-            body: formData,
-          });
-          const data = await res.json();
-          const text = (data.text || "").trim();
-          if (text.length > 2 && !endedRef.current) onResult(text);
-          else if (!endedRef.current) startListening(onResult);
-        } catch {
-          if (!endedRef.current) startListening(onResult);
-        }
-      };
-    }).catch(() => {
-      setListening(false);
-      setStatusMsg("Mic error. Please allow microphone access.");
-    });
+    rec.start();
   }, []);
 
   // ── GROQ ──────────────────────────────────────────────────────────────────
@@ -231,6 +211,8 @@ export function useInterview({ navigate }) {
 
   // ── START / END ───────────────────────────────────────────────────────────
   async function startSession() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setMicAllowed(false); return; }
     try { await navigator.mediaDevices.getUserMedia({ audio: true }); setMicAllowed(true); }
     catch { setMicAllowed(false); return; }
     endedRef.current = false; sessionRef.current = []; conversationRef.current = [];
@@ -250,7 +232,7 @@ export function useInterview({ navigate }) {
     if (endedRef.current) return;
     endedRef.current = true; clearInterval(timerRef.current); setRunning(false);
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (mediaRecRef.current?.state === "recording") mediaRecRef.current.stop();
+    window.speechSynthesis.cancel();
     setSpeaking(false); setListening(false); generateFeedback();
   }
 
