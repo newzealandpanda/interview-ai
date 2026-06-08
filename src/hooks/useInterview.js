@@ -95,34 +95,9 @@ export function useInterview({ navigate }) {
     else { synth.onvoiceschanged = () => { synth.onvoiceschanged = null; doSpeak(); }; }
   }, []);
 
-  const speak = useCallback(async (text, onDone) => {
+  const speak = useCallback((text, onDone) => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    setSpeaking(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || "";
-      const voice = MODE_VOICES[modeRef.current?.id] || "troy";
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ text, voice }),
-      });
-      const data = await res.json();
-      if (!data.audio) throw new Error(data.error || "No audio");
-      const binary = atob(data.audio);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "audio/wav" });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
-      audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
-      audio.play();
-    } catch {
-      // Fallback to browser TTS (setSpeaking stays true, speakBrowser will reset it)
-      speakBrowser(text, onDone);
-    }
+    speakBrowser(text, onDone);
   }, [speakBrowser]);
 
   // ── STT ───────────────────────────────────────────────────────────────────
