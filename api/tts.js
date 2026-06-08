@@ -1,12 +1,7 @@
 import { rateLimit } from "./rateLimit.js";
 import { requireAuth } from "./auth.js";
 
-const ALLOWED_VOICES = new Set([
-  "aura", "luna", "stella", "athena", "hera",
-  "orion", "arcas", "perseus", "angus", "orpheus",
-  "helios", "zeus", "nova", "sky", "echo", "river",
-  "troy", "dan", "tara", "william",
-]);
+const ALLOWED_VOICES = new Set(["autumn", "diana", "hannah", "austin", "daniel", "troy"]);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
