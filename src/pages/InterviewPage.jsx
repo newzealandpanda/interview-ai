@@ -46,9 +46,10 @@ export default function InterviewPage({ role, level, mode, duration, timeLeft, t
         {speaking && <><Waveform active={true} color={T} /><span style={{ color: TM, fontSize: 13, fontWeight: 600 }}>AI is speaking...</span></>}
         {listening && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 520, overflow: "hidden" }}>
+            <img src="/microphone.png" alt="" style={{ width: 18, height: 18, objectFit: "contain", flexShrink: 0 }} />
             <Waveform active={true} color="#7fffaa" />
             <span style={{ color: "#7fffaa", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {statusMsg || "🎙 Listening..."}
+              {statusMsg || "Listening..."}
             </span>
           </div>
         )}

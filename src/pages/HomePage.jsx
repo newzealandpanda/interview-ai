@@ -47,7 +47,7 @@ export default function HomePage({ user, onLogout }) {
                 </div>
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginBottom: 14 }}>
                   <div style={{ background: BG, border: `1px solid ${TM}`, borderRadius: "12px 0 12px 12px", padding: "9px 12px", fontSize: 13, color: DARK, lineHeight: 1.5 }}>I use retry logic and Playwright's built-in retry option...</div>
-                  <div style={{ width: 30, height: 30, borderRadius: "50%", background: TL, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>🧑</div>
+                  <img src="/microphone.png" alt="" style={{ width: 30, height: 30, objectFit: "contain", flexShrink: 0 }} />
                 </div>
                 <Waveform active={true} color={T} />
               </div>
