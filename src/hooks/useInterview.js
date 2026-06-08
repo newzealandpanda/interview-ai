@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../supabase.js";
 import { MODES, DEFAULT_DURATION, parseFeedback } from "../constants.js";
 
+const MODE_VOICES = { friendly: "hannah", normal: "troy", tough: "austin" };
+
 export function useInterview({ navigate }) {
   const [role, setRole]         = useState(null);
   const [level, setLevel]       = useState(null);
@@ -23,6 +25,7 @@ export function useInterview({ navigate }) {
 
   const timerRef        = useRef(null);
   const audioRef        = useRef(null);
+  const modeRef         = useRef(null);
   const mediaRecRef     = useRef(null);
   const sessionRef      = useRef([]);
   const endedRef        = useRef(false);
@@ -31,6 +34,8 @@ export function useInterview({ navigate }) {
 
   const MIN_QUESTIONS = 5;
   const MAX_QUESTIONS = 12;
+
+  useEffect(() => { modeRef.current = mode; }, [mode]);
 
   // ── AUTH ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -66,9 +71,6 @@ export function useInterview({ navigate }) {
     return () => clearInterval(timerRef.current);
   }, [running]);
 
-  // ── VOICE MAP ─────────────────────────────────────────────────────────────
-  const MODE_VOICES = { friendly: "hannah", normal: "troy", tough: "austin" };
-
   // ── TTS ───────────────────────────────────────────────────────────────────
   const speak = useCallback(async (text, onDone) => {
     console.log("[TTS] speak called, mode:", mode?.id, "text:", text?.slice(0, 40));
@@ -77,7 +79,7 @@ export function useInterview({ navigate }) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || "";
-      const voice = MODE_VOICES[mode?.id] || "troy";
+      const voice = MODE_VOICES[modeRef.current?.id] || "troy";
       console.log("[TTS] fetching /api/tts, voice:", voice);
       const res = await fetch("/api/tts", {
         method: "POST",
@@ -102,7 +104,7 @@ export function useInterview({ navigate }) {
       setSpeaking(false);
       onDone?.();
     }
-  }, [mode]);
+  }, []);
 
   // ── STT ───────────────────────────────────────────────────────────────────
   const startListening = useCallback((onResult) => {
