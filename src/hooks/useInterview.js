@@ -26,7 +26,7 @@ export function useInterview({ navigate }) {
   const timerRef        = useRef(null);
   const audioRef        = useRef(null);
   const modeRef         = useRef(null);
-  const mediaRecRef     = useRef(null);
+  const recognRef       = useRef(null);
   const sessionRef      = useRef([]);
   const endedRef        = useRef(false);
   const conversationRef = useRef([]);
@@ -105,6 +105,7 @@ export function useInterview({ navigate }) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setStatusMsg("Speech recognition not supported in this browser."); return; }
     const rec = new SR();
+    recognRef.current = rec;
     rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = true;
 
     let finalText = "";
@@ -112,7 +113,7 @@ export function useInterview({ navigate }) {
     let silenceTimer = null;
     const SILENCE_MS = 2800;
 
-    setListening(true); setStatusMsg("🎙 Listening...");
+    setListening(true); setStatusMsg("Listening...");
 
     rec.onresult = (e) => {
       finalText = ""; interimText = "";
@@ -120,7 +121,7 @@ export function useInterview({ navigate }) {
         if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
         else interimText += e.results[i][0].transcript;
       }
-      setStatusMsg("🎙 " + (finalText + interimText).trim());
+      setStatusMsg((finalText + interimText).trim());
       clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
         const result = (finalText + interimText).trim();
@@ -131,7 +132,7 @@ export function useInterview({ navigate }) {
     rec.onerror = (e) => {
       clearTimeout(silenceTimer);
       if (e.error === "no-speech") {
-        setStatusMsg("🎙 No speech detected, listening again...");
+        setStatusMsg("No speech detected, listening again...");
         rec.stop();
         setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 500);
       } else { setListening(false); setStatusMsg("Mic error: " + e.error); }
@@ -223,7 +224,7 @@ export function useInterview({ navigate }) {
     const greetings = {
       friendly: `Hi there! I'm Jamie. We have ${duration} minutes for a ${level?.label} ${role?.label} interview. Take your time and speak naturally. Ready?`,
       normal:   `Hello, I'm Alex. We have ${duration} minutes for a ${level?.label} ${role?.label} interview. Let's get started.`,
-      tough:    `Let's begin. ${duration} minutes, ${level?.label} ${role?.label}. I expect specific answers. Introduce yourself.`,
+      tough:    `Let's begin. ${duration} minutes, ${level?.label} ${role?.label}. I expect direct, specific answers. Ready?`,
     };
     speak(greetings[mode?.id || "normal"], () => runInterviewTurn());
   }
@@ -231,6 +232,7 @@ export function useInterview({ navigate }) {
   function endSession() {
     if (endedRef.current) return;
     endedRef.current = true; clearInterval(timerRef.current); setRunning(false);
+    recognRef.current?.abort();
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     window.speechSynthesis.cancel();
     setSpeaking(false); setListening(false); generateFeedback();

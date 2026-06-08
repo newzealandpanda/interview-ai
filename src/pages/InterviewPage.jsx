@@ -2,8 +2,6 @@ import { T, TD, TM, DARK, CSS, fmt } from "../constants.js";
 import Waveform from "../components/Waveform.jsx";
 
 export default function InterviewPage({ role, level, mode, duration, timeLeft, timerColor, pct, transcript, speaking, listening, statusMsg, onEnd }) {
-  // Extract live text from statusMsg (starts with 🎙 )
-  const liveText = listening && statusMsg?.startsWith("🎙 ") ? statusMsg.slice(3).trim() : "";
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", background: DARK, minHeight: "100vh", color: "white" }}>
       <style>{CSS}</style>
@@ -43,22 +41,15 @@ export default function InterviewPage({ role, level, mode, duration, timeLeft, t
         ))}
       </div>
 
-      {/* Live transcript bubble */}
-      {liveText && (
-        <div style={{ position: "fixed", bottom: 72, left: 0, right: 0, display: "flex", justifyContent: "flex-end", padding: "0 5%", pointerEvents: "none" }}>
-          <div style={{ background: "#0a2828", border: `1px solid ${T}44`, borderRadius: "12px 0 12px 12px", padding: "10px 14px", fontSize: 13, lineHeight: 1.5, maxWidth: 520, color: "white", opacity: 0.85, fontStyle: "italic" }}>
-            {liveText}
-          </div>
-        </div>
-      )}
-
       {/* Status bar */}
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#0d2525", borderTop: "1px solid #1e3535", padding: "14px 5%", display: "flex", alignItems: "center", justifyContent: "center", gap: 16 }}>
         {speaking && <><Waveform active={true} color={T} /><span style={{ color: TM, fontSize: 13, fontWeight: 600 }}>AI is speaking...</span></>}
         {listening && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 520, overflow: "hidden" }}>
             <Waveform active={true} color="#7fffaa" />
-            <span style={{ color: "#7fffaa", fontSize: 13, fontWeight: 500 }}>Listening...</span>
+            <span style={{ color: "#7fffaa", fontSize: 13, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {statusMsg || "🎙 Listening..."}
+            </span>
           </div>
         )}
         {!speaking && !listening && statusMsg && <span style={{ color: "#f59e0b", fontSize: 13 }}>{statusMsg}</span>}
