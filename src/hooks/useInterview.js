@@ -22,8 +22,7 @@ export function useInterview({ navigate }) {
   const [jobDescription, setJobDescription] = useState("");
 
   const timerRef        = useRef(null);
-  const audioRef        = useRef(null);
-  const mediaRecRef     = useRef(null);
+  const synthRef        = useRef(window.speechSynthesis);
   const recognRef       = useRef(null);
   const sessionRef      = useRef([]);
   const endedRef        = useRef(false);
@@ -67,138 +66,79 @@ export function useInterview({ navigate }) {
     return () => clearInterval(timerRef.current);
   }, [running]);
 
-
-  // ── VOICE MAP ─────────────────────────────────────────────────────────────
-  const MODE_VOICES = { friendly: "tara", normal: "troy", tough: "dan" };
-
   // ── TTS ───────────────────────────────────────────────────────────────────
-  const speak = useCallback(async (text, onDone) => {
-    // Stop any current audio
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    setSpeaking(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token || "";
-      const voice = MODE_VOICES[mode?.id] || "Fritz-PlayAI";
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-        body: JSON.stringify({ text, voice }),
-      });
-      const data = await res.json();
-      if (!data.audio) throw new Error("No audio");
-      const binary = atob(data.audio);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: "audio/wav" });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
-      audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
-      audio.play();
-    } catch {
-      setSpeaking(false);
-      onDone?.();
-    }
-  }, [mode]);
+  const speak = useCallback((text, onDone) => {
+    const synth = synthRef.current;
+    synth.cancel();
+    const doSpeak = () => {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = "en-US"; utt.rate = 0.93; utt.pitch = 1.0;
+      const voices = synth.getVoices();
+      const voice =
+        voices.find(v => v.name === "Google US English") ||
+        voices.find(v => /microsoft.*english/i.test(v.name) && v.lang === "en-US") ||
+        voices.find(v => v.lang === "en-US") ||
+        voices.find(v => v.lang.startsWith("en"));
+      if (voice) utt.voice = voice;
+      setSpeaking(true);
+      utt.onend  = () => { setSpeaking(false); onDone?.(); };
+      utt.onerror = () => { setSpeaking(false); onDone?.(); };
+      synth.speak(utt);
+    };
+    const voices = synth.getVoices();
+    if (voices.length > 0) doSpeak();
+    else { synth.onvoiceschanged = () => { synth.onvoiceschanged = null; doSpeak(); }; }
+  }, []);
 
   // ── STT ───────────────────────────────────────────────────────────────────
   const startListening = useCallback((onResult) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setStatusMsg("Speech recognition not supported in this browser."); return; }
+    const rec = new SR();
+    recognRef.current = rec;
+    rec.lang = "en-US"; rec.interimResults = true; rec.maxAlternatives = 1; rec.continuous = true;
+
+    let finalText = "";
+    let interimText = "";
+    let silenceTimer = null;
+    const SILENCE_MS = 2800;
+
     setListening(true); setStatusMsg("🎙 Listening...");
-    const chunks = [];
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
-      mediaRecRef.current = recorder;
-      let silenceTimer = null;
-      const SILENCE_MS = 3000;
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        setListening(false); setStatusMsg("");
-        if (endedRef.current) return;
-        if (chunks.length === 0) { startListening(onResult); return; }
-        try {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const formData = new FormData();
-          formData.append("file", blob, "audio.webm");
-          formData.append("model", "whisper-large-v3-turbo");
-          formData.append("language", "en");
-          const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token || "";
-          const res = await fetch("/api/stt", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
-            body: formData,
-          });
-          const data = await res.json();
-          const text = (data.text || "").trim();
-          if (text.length > 2 && !endedRef.current) onResult(text);
-          else if (!endedRef.current) startListening(onResult);
-        } catch {
-          if (!endedRef.current) startListening(onResult);
-        }
-      };
-
-      recorder.start();
-      // Auto-stop after silence
+    rec.onresult = (e) => {
+      finalText = ""; interimText = "";
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + " ";
+        else interimText += e.results[i][0].transcript;
+      }
+      setStatusMsg("🎙 " + (finalText + interimText).trim());
+      clearTimeout(silenceTimer);
       silenceTimer = setTimeout(() => {
-        if (recorder.state === "recording") recorder.stop();
+        const result = (finalText + interimText).trim();
+        if (result.length > 2) rec.stop();
       }, SILENCE_MS);
+    };
 
-      // Re-set silence timer on audio activity
-      const audioCtx = new AudioContext();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
-      source.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const checkActivity = setInterval(() => {
-        analyser.getByteFrequencyData(data);
-        const volume = data.reduce((a, b) => a + b, 0) / data.length;
-        if (volume > 10) {
-          clearTimeout(silenceTimer);
-          silenceTimer = setTimeout(() => {
-            if (recorder.state === "recording") recorder.stop();
-          }, SILENCE_MS);
-        }
-      }, 200);
+    rec.onerror = (e) => {
+      clearTimeout(silenceTimer);
+      if (e.error === "no-speech") {
+        setStatusMsg("🎙 No speech detected, listening again...");
+        rec.stop();
+        setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 500);
+      } else { setListening(false); setStatusMsg("Mic error: " + e.error); }
+    };
 
-      recorder.onstop = async () => {
-        clearInterval(checkActivity);
-        audioCtx.close();
-        stream.getTracks().forEach(t => t.stop());
-        setListening(false); setStatusMsg("");
-        if (endedRef.current) return;
-        if (chunks.length === 0) { startListening(onResult); return; }
-        try {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const formData = new FormData();
-          formData.append("file", blob, "audio.webm");
-          formData.append("model", "whisper-large-v3-turbo");
-          formData.append("language", "en");
-          const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token || "";
-          const res = await fetch("/api/stt", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` },
-            body: formData,
-          });
-          const data = await res.json();
-          const text = (data.text || "").trim();
-          if (text.length > 2 && !endedRef.current) onResult(text);
-          else if (!endedRef.current) startListening(onResult);
-        } catch {
-          if (!endedRef.current) startListening(onResult);
-        }
-      };
-    }).catch(() => {
-      setListening(false);
-      setStatusMsg("Mic error. Please allow microphone access.");
-    });
+    rec.onend = () => {
+      clearTimeout(silenceTimer);
+      setListening(false); setStatusMsg("");
+      const result = (finalText + interimText).trim();
+      if (result.length > 2 && !endedRef.current) onResult(result);
+      else if (result.length <= 2 && !endedRef.current) {
+        setTimeout(() => { if (!endedRef.current) startListening(onResult); }, 300);
+      }
+    };
+
+    rec.start();
   }, []);
 
   // ── GROQ ──────────────────────────────────────────────────────────────────
@@ -262,6 +202,8 @@ export function useInterview({ navigate }) {
 
   // ── START / END ───────────────────────────────────────────────────────────
   async function startSession() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setMicAllowed(false); return; }
     try { await navigator.mediaDevices.getUserMedia({ audio: true }); setMicAllowed(true); }
     catch { setMicAllowed(false); return; }
     endedRef.current = false; sessionRef.current = []; conversationRef.current = [];
@@ -280,8 +222,7 @@ export function useInterview({ navigate }) {
   function endSession() {
     if (endedRef.current) return;
     endedRef.current = true; clearInterval(timerRef.current); setRunning(false);
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (mediaRecRef.current?.state === "recording") mediaRecRef.current.stop();
+    recognRef.current?.abort(); synthRef.current.cancel();
     setSpeaking(false); setListening(false); generateFeedback();
   }
 
@@ -312,6 +253,7 @@ export function useInterview({ navigate }) {
           score: scoreMatch ? Math.min(100, Math.max(1, parseInt(scoreMatch[1]))) : null,
           answers_count: answers.length, feedback_raw: finalText,
           verdict: verdictMatch ? verdictMatch[1].trim().slice(0, 500) : "",
+          transcript: JSON.stringify(sessionRef.current),
         });
       }
     } catch {
