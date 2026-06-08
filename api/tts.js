@@ -2,9 +2,10 @@ import { rateLimit } from "./rateLimit.js";
 import { requireAuth } from "./auth.js";
 
 const ALLOWED_VOICES = new Set([
-  "Aaliyah-PlayAI", "Fritz-PlayAI", "Angelo-PlayAI",
-  "Arista-PlayAI", "Atlas-PlayAI", "Basil-PlayAI",
-  "Briggs-PlayAI", "Calum-PlayAI", "Celeste-PlayAI",
+  "aura", "luna", "stella", "athena", "hera",
+  "orion", "arcas", "perseus", "angus", "orpheus",
+  "helios", "zeus", "nova", "sky", "echo", "river",
+  "troy", "dan", "tara", "william",
 ]);
 
 export default async function handler(req, res) {
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
   if (text.length > 1000)
     return res.status(400).json({ error: "Text too long" });
 
-  const selectedVoice = ALLOWED_VOICES.has(voice) ? voice : "Fritz-PlayAI";
+  const selectedVoice = ALLOWED_VOICES.has(voice) ? voice : "troy";
 
   try {
     const response = await fetch("https://api.groq.com/openai/v1/audio/speech", {
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "playai-tts",
+        model: "canopylabs/orpheus-v1-english",
         input: text,
         voice: selectedVoice,
         response_format: "wav",

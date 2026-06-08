@@ -69,7 +69,7 @@ export function useInterview({ navigate }) {
 
 
   // ── VOICE MAP ─────────────────────────────────────────────────────────────
-  const MODE_VOICES = { friendly: "Aaliyah-PlayAI", normal: "Fritz-PlayAI", tough: "Angelo-PlayAI" };
+  const MODE_VOICES = { friendly: "tara", normal: "troy", tough: "dan" };
 
   // ── TTS ───────────────────────────────────────────────────────────────────
   const speak = useCallback(async (text, onDone) => {
