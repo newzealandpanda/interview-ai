@@ -20,7 +20,6 @@ export function useInterview({ navigate }) {
   const [qIndex, setQIndex]         = useState(0);
   const [avatarUrl, setAvatarUrl]   = useState(null);
   const [jobDescription, setJobDescription] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
 
   const timerRef        = useRef(null);
   const audioRef        = useRef(null);
