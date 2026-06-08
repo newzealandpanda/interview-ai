@@ -72,22 +72,41 @@ export function useInterview({ navigate }) {
   }, [running]);
 
   // ── TTS ───────────────────────────────────────────────────────────────────
+  const speakBrowser = useCallback((text, onDone) => {
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const doSpeak = () => {
+      const utt = new SpeechSynthesisUtterance(text);
+      utt.lang = "en-US"; utt.rate = 0.93; utt.pitch = 1.0;
+      const voices = synth.getVoices();
+      const voice =
+        voices.find(v => v.name === "Google US English") ||
+        voices.find(v => /microsoft.*english/i.test(v.name) && v.lang === "en-US") ||
+        voices.find(v => v.lang === "en-US") ||
+        voices.find(v => v.lang.startsWith("en"));
+      if (voice) utt.voice = voice;
+      utt.onend  = () => { setSpeaking(false); onDone?.(); };
+      utt.onerror = () => { setSpeaking(false); onDone?.(); };
+      synth.speak(utt);
+    };
+    const voices = synth.getVoices();
+    if (voices.length > 0) doSpeak();
+    else { synth.onvoiceschanged = () => { synth.onvoiceschanged = null; doSpeak(); }; }
+  }, []);
+
   const speak = useCallback(async (text, onDone) => {
-    console.log("[TTS] speak called, mode:", mode?.id, "text:", text?.slice(0, 40));
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
     setSpeaking(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || "";
       const voice = MODE_VOICES[modeRef.current?.id] || "troy";
-      console.log("[TTS] fetching /api/tts, voice:", voice);
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({ text, voice }),
       });
       const data = await res.json();
-      console.log("[TTS] response, has audio:", !!data.audio, "error:", data.error);
       if (!data.audio) throw new Error(data.error || "No audio");
       const binary = atob(data.audio);
       const bytes = new Uint8Array(binary.length);
@@ -99,12 +118,11 @@ export function useInterview({ navigate }) {
       audio.onended = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
       audio.onerror = () => { setSpeaking(false); URL.revokeObjectURL(url); onDone?.(); };
       audio.play();
-    } catch (e) {
-      console.error("[TTS] error:", e);
-      setSpeaking(false);
-      onDone?.();
+    } catch {
+      // Fallback to browser TTS
+      speakBrowser(text, onDone);
     }
-  }, []);
+  }, [speakBrowser]);
 
   // ── STT ───────────────────────────────────────────────────────────────────
   const startListening = useCallback((onResult) => {
