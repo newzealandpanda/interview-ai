@@ -119,7 +119,7 @@ export default function LeaderboardPage({ user, onLogout }) {
           <div style={{ textAlign: "center", padding: 60, color: GREY }}>Loading rankings...</div>
         ) : filtered.length === 0 ? (
           <div style={{ ...styles.card, textAlign: "center", padding: 48 }}>
-            <img src="/leaderboard-no-results.png" alt="" style={{ width: 80, height: 80, objectFit: "contain", marginBottom: 12 }} />
+            <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
             <p style={{ color: GREY, fontSize: 15 }}>No results yet for this filter. Be the first!</p>
             <button className="btn-hover" style={{ ...styles.bigBtn, marginTop: 16 }} onClick={() => navigate("/practice")}>Start Interview</button>
           </div>
@@ -180,13 +180,13 @@ export default function LeaderboardPage({ user, onLogout }) {
                   {/* Avg score */}
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontWeight: 700, fontSize: 16, color: GREY }}>{entry.avg_score}</span>
-                    <span style={{ fontSize: 11, color: GREY }}>/100</span>
+                    <span style={{ fontSize: 11, color: GREY }}>/10</span>
                   </div>
 
                   {/* Best score */}
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontWeight: 800, fontSize: 20, color: scoreColor }}>{entry.best_score}</span>
-                    <span style={{ fontSize: 12, color: GREY }}>/100</span>
+                    <span style={{ fontSize: 12, color: GREY }}>/10</span>
                   </div>
                 </div>
               );
@@ -196,7 +196,7 @@ export default function LeaderboardPage({ user, onLogout }) {
 
         <div style={{ marginTop: 32, textAlign: "center" }}>
           <button className="btn-hover" style={styles.bigBtn} onClick={() => navigate("/practice")}>
-            🎤 Practice to Climb the Ranks
+            {<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>} Practice to Climb the Ranks
           </button>
         </div>
       </div>
