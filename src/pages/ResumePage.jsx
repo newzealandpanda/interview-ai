@@ -125,7 +125,7 @@ export default function ResumePage({ user, onLogout }) {
           style={{ ...styles.card, border: `2px dashed ${dragging ? T : file ? T : TM}`, background: dragging ? TL : file ? TL : "white", cursor: "pointer", textAlign: "center", padding: "40px 24px", transition: "all .2s" }}>
           <input ref={fileRef} type="file" accept=".pdf,.docx" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setFile(f); setError(""); setResult(null); } }} />
           <div style={{ marginBottom: 12 }}>
-            {file ? <span style={{ fontSize: 48 }}>📄</span> : <img src="/upload.png" alt="upload" style={{ width: 52, height: 52, objectFit: "contain" }} />}
+            {file ? <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{color: T}}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> : <img src="/upload.png" alt="upload" style={{ width: 52, height: 52, objectFit: "contain" }} />}
           </div>
           {file
             ? <><div style={{ fontWeight: 700, color: DARK, fontSize: 15, marginBottom: 4 }}>{file.name}</div><div style={{ color: GREY, fontSize: 13 }}>{(file.size / 1024).toFixed(0)} KB · Click to change</div></>
@@ -147,7 +147,7 @@ export default function ResumePage({ user, onLogout }) {
         {error && <div style={{ marginTop: 16, background: "#fff0f0", border: "1px solid #fca5a5", borderRadius: 12, padding: 14, color: "#b91c1c", fontSize: 14 }}>{error}</div>}
 
         <button className="btn-hover" style={{ ...styles.bigBtn, marginTop: 24, opacity: file ? 1 : 0.45 }} disabled={!file || loading || extracting} onClick={analyzeResume}>
-          {extracting ? "Reading file..." : loading ? "Analyzing..." : "🔍 Analyze Resume"}
+          {extracting ? "Reading file..." : loading ? "Analyzing..." : <>{<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>} Analyze Resume</>}
         </button>
 
         {(loading || extracting) && (
