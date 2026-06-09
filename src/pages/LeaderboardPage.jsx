@@ -180,13 +180,13 @@ export default function LeaderboardPage({ user, onLogout }) {
                   {/* Avg score */}
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontWeight: 700, fontSize: 16, color: GREY }}>{entry.avg_score}</span>
-                    <span style={{ fontSize: 11, color: GREY }}>/10</span>
+                    <span style={{ fontSize: 11, color: GREY }}>/100</span>
                   </div>
 
                   {/* Best score */}
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontWeight: 800, fontSize: 20, color: scoreColor }}>{entry.best_score}</span>
-                    <span style={{ fontSize: 12, color: GREY }}>/10</span>
+                    <span style={{ fontSize: 12, color: GREY }}>/100</span>
                   </div>
                 </div>
               );
