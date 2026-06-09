@@ -1,16 +1,13 @@
-import { test, expect } from '@playwright/test';
-import { loginTestUser } from '../helpers/auth';
+import { test, expect } from '../fixtures';
 
 test.describe('Resume page', () => {
 
-  test('/resume - page loads with upload zone', async ({ page }) => {
-    await loginTestUser(page);
+  test('/resume - page loads with upload zone', async ({ authenticatedPage: page }) => {
     await page.goto('/resume');
-
     await expect(page.getByText('Drop your resume here or click to upload')).toBeVisible();
   });
 
-  test('/resume - analyze button is disabled before file upload', async ({ page }) => {
+  test('/resume - analyze button is disabled before file upload', async ({ authenticatedPage: page }) => {
     // mock /api/resume - return data.feedback as the app expects
     await page.route('**/api/resume', async route => {
       await route.fulfill({
@@ -27,14 +24,13 @@ VERDICT: Ready for most positions.`
       });
     });
 
-    await loginTestUser(page);
     await page.goto('/resume');
 
-    // analyze button is disabled until a file is selected
-    const analyzeBtn = page.getByRole('button', { name: '🔍 Analyze Resume' });
+    // button is disabled until file is selected - SVG icon inside, match by partial text
+    const analyzeBtn = page.getByRole('button', { name: /Analyze Resume/i });
     await expect(analyzeBtn).toBeDisabled();
 
-    // inject file via JS - bypasses pdfjsLib, we only check UI reacts to file selection
+    // inject file via JS - bypasses pdfjsLib
     await page.evaluate(() => {
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       const blob = new Blob(['resume text content for testing'], { type: 'application/pdf' });
